@@ -1,7 +1,9 @@
 import numpy as np
 import os, gzip, shutil
 
-path_project = "/Users/saumya/Desktop/Sealevelrise/"
+path_local = "/Users/saumya/Desktop/Sealevelrise/"
+path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
+path_project = path_cluster
 path_data = path_project+"Data/"
 path_data_fr = path_data + "Forced_Responses/"
 
