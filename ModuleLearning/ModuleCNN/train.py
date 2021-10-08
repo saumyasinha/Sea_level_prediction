@@ -7,10 +7,10 @@ from ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSE
 from ModuleLearning import eval
 
 def get_target_mask(y):
-    print(y[:5,0,0])
+    # print(y[:5,0,0])
     missing_val = 1e+36
     mask = (y != missing_val)
-    print("num of ocean pixels: ", mask.sum())
+    # print("num of ocean pixels: ", mask.sum())
     y[y == missing_val] = 0
     return y, mask
 
@@ -63,7 +63,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         print(y_pred.shape)
  #       np.save(folder_saving + "/" + "test_predictions.npy", y_pred)
         test_rmse, test_mae = eval.evaluation_metrics(y_pred, y_test, test_mask)
-        print("test rmse and mae scores: ", test_rmse, test_mae)
+        # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
     if X_valid is not None:
@@ -75,6 +75,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred, y_valid, valid_mask)
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 
+    return valid_rmse, valid_mae, test_rmse, test_mae
 
 
 def loss_plots(train_loss, valid_loss, folder_saving, loss_type=""):

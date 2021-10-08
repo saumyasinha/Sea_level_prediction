@@ -32,12 +32,12 @@ quantile = False
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
-sub_reg = "cnn_with_1yr_lag_large_channels"
+sub_reg = "cnn_with_1yr_lag_small_channels"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12
+n_prev_months = 24
 
 batch_size = 8
 epochs = 200
@@ -51,6 +51,8 @@ def main():
         folder_saving = path_models+ model + "/" + reg + "/"+ sub_reg + "/"
         os.makedirs(
             folder_saving, exist_ok=True)
+
+        f = open(folder_saving +"/results.txt", 'a')
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years)
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
@@ -90,9 +92,11 @@ def main():
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
         train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        # y_valid_copy = y_valid.copy() #if you are not doing this then pass X_valid and y_valid as None
-        train_cnn.basic_CNN_test(None, None, X_test, y_test, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
-
+        y_valid_copy = y_valid.copy() #if you are not doing this then pass X_valid and y_valid as None
+        valid_rmse, valid_mae, test_rmse, test_mae = train_cnn.basic_CNN_test(X_valid, y_valid_copy, X_test, y_test, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
+        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        f.close()
 
 if __name__=='__main__':
     main()
