@@ -33,6 +33,7 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         if self.downsample is not None:
+            print(self.downsample)
             shortcut = self.downsample(x)
 
         out += shortcut
@@ -78,6 +79,7 @@ class DeconvBottleneck(nn.Module):
         out = self.relu(out)
 
         if self.upsample is not None:
+            print(self.upsample)
             shortcut = self.upsample(x)
 
         out += shortcut
@@ -86,7 +88,7 @@ class DeconvBottleneck(nn.Module):
         return out
 
 class ResNet(nn.Module):
-    def __init__(self, downblock, upblock, num_layers, input_dim, output_dim):
+    def __init__(self, downblock, upblock, input_dim, output_dim):
         super(ResNet, self).__init__()
 
         self.in_channels = 64
@@ -99,17 +101,17 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.dlayer1 = self._make_downlayer(downblock, 64, num_layers[0])
-        self.dlayer2 = self._make_downlayer(downblock, 128, num_layers[1],
+        self.dlayer1 = self._make_downlayer(downblock, 64, 1)
+        self.dlayer2 = self._make_downlayer(downblock, 128, 1,
                                             stride=1)
-        self.dlayer3 = self._make_downlayer(downblock, 256, num_layers[2],
-                                            stride=1)
-        self.dlayer4 = self._make_downlayer(downblock, 512, num_layers[3],
-                                            stride=1)
+        # self.dlayer3 = self._make_downlayer(downblock, 256, num_layers[2],
+        #                                     stride=1)
+        # self.dlayer4 = self._make_downlayer(downblock, 512, num_layers[3],
+        #                                     stride=1)
 
-        self.uplayer1 = self._make_up_block(upblock, 512, 1, stride=1)
-        self.uplayer2 = self._make_up_block(upblock, 256, num_layers[2], stride=1)
-        self.uplayer3 = self._make_up_block(upblock, 128, num_layers[1], stride=1)
+        # self.uplayer1 = self._make_up_block(upblock, 512, 1, stride=1)
+        # self.uplayer2 = self._make_up_block(upblock, 256, num_layers[2], stride=1)
+        self.uplayer3 = self._make_up_block(upblock, 128, 1, stride=1)
         self.uplayer4 = self._make_up_block(upblock, 64, 2, stride=1)
 
         upsample = nn.Sequential(
@@ -172,15 +174,15 @@ class ResNet(nn.Module):
         print(x.shape)
         x = self.dlayer2(x)
         print(x.shape)
-        x = self.dlayer3(x)
-        print(x.shape)
-        x = self.dlayer4(x)
-        print(x.shape)
+        # x = self.dlayer3(x)
+        # print(x.shape)
+        # x = self.dlayer4(x)
+        # print(x.shape)
 
-        x = self.uplayer1(x)
-        print(x.shape)
-        x = self.uplayer2(x)
-        print(x.shape)
+        # x = self.uplayer1(x)
+        # print(x.shape)
+        # x = self.uplayer2(x)
+        # print(x.shape)
         x = self.uplayer3(x)
         print(x.shape)
         x = self.uplayer4(x)
@@ -196,7 +198,7 @@ class ResNet(nn.Module):
 
 def ResNet50(input_channel, output_channel):
     # return ResNet(Bottleneck, DeconvBottleneck, [3, 4, 6, 3], input_channel, output_channel)
-    return ResNet(Bottleneck, DeconvBottleneck, [1, 1, 1, 1], input_channel, output_channel)
+    return ResNet(Bottleneck, DeconvBottleneck, input_channel, output_channel)
 
 
 

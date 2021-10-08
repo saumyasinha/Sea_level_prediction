@@ -7,7 +7,7 @@ from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 path_data = path_project+"Data/"
 path_data_fr = path_data + "Forced_Responses/"
 
@@ -38,7 +38,7 @@ features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 batch_size = 16
-epochs = 100
+epochs = 1
 lr = 1e-3
 
 def main():

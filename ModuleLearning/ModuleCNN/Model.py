@@ -83,14 +83,14 @@ class FullyConvNet(nn.Module):
             last_channel_size = 1
 
         # self.encoder = nn.Sequential(
-        #     nn.Conv2d(dim_channels, 24, 3, padding = 1),
-        #     nn.BatchNorm2d(24),
+        #     nn.Conv2d(dim_channels, 64, (3,3), stride=2, padding = 1), #180*90
+        #     nn.BatchNorm2d(64),
         #     nn.ReLU(),
-        #     nn.Conv2d(24, 48,3, padding = 1),
-        #     nn.BatchNorm2d(48),
+        #     nn.Conv2d(64, 128,(3,3),stride=2,  padding = 1), #90*45
+        #     nn.BatchNorm2d(128),
         #     nn.ReLU(),
-        #     nn.Conv2d(48, 96, 3, padding = 1),
-        #     nn.BatchNorm2d(96),
+        #     nn.Conv2d(128, 256, (3,3), stride =2, padding = 1), #45*23
+        #     nn.BatchNorm2d(256),
         #     nn.ReLU(),
         #     # nn.Conv2d(48, 96, 4, stride=2, padding=1),
         #     # nn.ReLU(),
@@ -98,66 +98,38 @@ class FullyConvNet(nn.Module):
         # self.decoder = nn.Sequential(
         #     #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
         #     #             nn.ReLU(),
-        #     nn.ConvTranspose2d(96, 48, 3, padding = 1),
-        #     nn.BatchNorm2d(48),
+        #     nn.ConvTranspose2d(256, 128, (3,3), stride = 2, padding = (0,1)), #91*45
+        #     nn.BatchNorm2d(128),
         #     nn.ReLU(),
-        #     nn.ConvTranspose2d(48, 24,3, padding = 1),
-        #     nn.BatchNorm2d(24),
+        #     nn.ConvTranspose2d(128, 64,(3,3), stride=2, padding = 1), #181*89
+        #     nn.BatchNorm2d(64),
         #     nn.ReLU(),
-        #     nn.ConvTranspose2d(24, last_channel_size, 3, padding = 1),
+        #     nn.ConvTranspose2d(64, last_channel_size, (2, 4), stride=2, padding = (1,0)) #360*180
         #     # nn.Sigmoid(),
         # )
         #
+        #
+        #
         # self.apply(weights_init)
 
-        self.encoder = nn.Sequential(
-            nn.Conv2d(dim_channels, 64, (3,3), padding = 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 128,(3,3), padding = 1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 256, (3,3), padding = 1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            # nn.Conv2d(48, 96, 4, stride=2, padding=1),
-            # nn.ReLU(),
-        )
-        self.decoder = nn.Sequential(
-            #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
-            #             nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, (3,3), padding = 1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.ConvTranspose2d(128, 64,(3,3), padding = 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, last_channel_size, (3, 3), padding=1)
-            # nn.Sigmoid(),
-        )
 
 
+    # def forward(self, x):
+    #     x = self.encoder(x)
+    #     print(x.shape)
+    #     x = self.decoder(x)
+    #     print(x.shape)
+    #     x = torch.squeeze(x)
+    #     # print(x.shape)
+    #     return x
 
-        self.apply(weights_init)
-
-
+        self.model = ResNet50(dim_channels,last_channel_size)
 
     def forward(self, x):
-        x = self.encoder(x)
-        # print(x.shape)
-        x = self.decoder(x)
-        # print(x.shape)
+        x = self.model(x)
         x = torch.squeeze(x)
-        # print(x.shape)
+        print(x.shape)
         return x
-
-    #     self.model = ResNet50(dim_channels,last_channel_size)
-    #
-    # def forward(self, x):
-    #     x = self.model(x)
-    #     x = torch.squeeze(x)
-    #     print(x.shape)
-    #     return x
 
 
 
