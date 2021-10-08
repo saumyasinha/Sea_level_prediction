@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
-from Sea_level_prediction.ModuleLearning.ModuleCNN.resnet import ResNet50
+from ModuleLearning.ModuleCNN.resnet import ResNet50
 
 
 
@@ -82,54 +82,83 @@ class FullyConvNet(nn.Module):
         else:
             last_channel_size = 1
 
-        # self.encoder = nn.Sequential(
-        #     nn.Conv2d(dim_channels, 64, (3,3), stride=2, padding = 1), #180*90
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-        #     nn.Conv2d(64, 128,(3,3),stride=2,  padding = 1), #90*45
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-        #     nn.Conv2d(128, 256, (3,3), stride =2, padding = 1), #45*23
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(),
-        #     # nn.Conv2d(48, 96, 4, stride=2, padding=1),
-        #     # nn.ReLU(),
-        # )
-        # self.decoder = nn.Sequential(
-        #     #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
-        #     #             nn.ReLU(),
-        #     nn.ConvTranspose2d(256, 128, (3,3), stride = 2, padding = (0,1)), #91*45
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-        #     nn.ConvTranspose2d(128, 64,(3,3), stride=2, padding = 1), #181*89
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-        #     nn.ConvTranspose2d(64, last_channel_size, (2, 4), stride=2, padding = (1,0)) #360*180
-        #     # nn.Sigmoid(),
-        # )
-        #
-        #
-        #
-        # self.apply(weights_init)
+
+        
+        ## Samll FCN
+        #self.encoder = nn.Sequential(
+           # nn.Conv2d(dim_channels, 24, (3,3),stride=2, padding = 1),
+           # nn.BatchNorm2d(24),
+           # nn.ReLU(),
+           # nn.Conv2d(24, 48,(3,3), stride=2,padding = 1),
+           # nn.BatchNorm2d(48),
+           # nn.ReLU(),
+           # nn.Conv2d(48, 96, (3,3), stride=2, padding = 1),
+           # nn.BatchNorm2d(96),
+          #  nn.ReLU(),
+         #   # nn.Conv2d(48, 96, 4, stride=2, padding=1),
+        #    # nn.ReLU(),
+       # )
+       # self.decoder = nn.Sequential(
+          #  #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
+          #  #             nn.ReLU(),
+          #  nn.ConvTranspose2d(96, 48, (3,3), stride = 2, padding = (0,1)), #91*45
+          #  nn.BatchNorm2d(48),
+          #  nn.ReLU(),
+          #  nn.ConvTranspose2d(48, 24,(3,3), stride=2, padding = 1), #181*89
+          #  nn.BatchNorm2d(24),
+          #  nn.ReLU(),
+          #  nn.ConvTranspose2d(24, last_channel_size, (2, 4), stride=2, padding = (1,0)) #360*180
+         #   # nn.Sigmoid(),
+        #)
+        
+        ## Large FCN
+        self.encoder = nn.Sequential(
+            nn.Conv2d(dim_channels, 64, (3,3), stride=2, padding = 1), #180*90
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 128,(3,3),stride=2,  padding = 1), #90*45
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 256, (3,3), stride =2, padding = 1), #45*23
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            # nn.Conv2d(48, 96, 4, stride=2, padding=1),
+            # nn.ReLU(),
+        )
+        self.decoder = nn.Sequential(
+            #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
+            #             nn.ReLU(),
+            nn.ConvTranspose2d(256, 128, (3,3), stride = 2, padding = (0,1)), #91*45
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 64,(3,3), stride=2, padding = 1), #181*89
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, last_channel_size, (2, 4), stride=2, padding = (1,0)) #360*180
+            # nn.Sigmoid(),
+        )
 
 
+        self.apply(weights_init)
 
-    # def forward(self, x):
-    #     x = self.encoder(x)
-    #     print(x.shape)
-    #     x = self.decoder(x)
-    #     print(x.shape)
-    #     x = torch.squeeze(x)
-    #     # print(x.shape)
-    #     return x
 
-        self.model = ResNet50(dim_channels,last_channel_size)
 
     def forward(self, x):
-        x = self.model(x)
-        x = torch.squeeze(x)
+        x = self.encoder(x)
         print(x.shape)
+        x = self.decoder(x)
+        print(x.shape)
+        x = torch.squeeze(x)
+        # print(x.shape)
         return x
+
+    #     self.model = ResNet50(dim_channels,last_channel_size)
+    #
+    # def forward(self, x):
+    #     x = self.model(x)
+    #     x = torch.squeeze(x)
+    #     print(x.shape)
+    #     return x
 
 
 
@@ -156,7 +185,7 @@ def trainBatchwise(trainX, trainY, validX,
 
     print(basic_forecaster)
 
-    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08)
+    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
     # scheduler = StepLR(optimizer, step_size=25, gamma=0.1)
     # criterion = torch.nn.MSELoss()
     # criterion = nn.L1Loss()

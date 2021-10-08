@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # === 2. List of SBATCH arguements ===
-#SBATCH --job-name=tcn_week_ahead_with_attn_no_quantile
-#SBATCH --nodelist=bgpu-casa1
+#SBATCH --job-name=run_large_FCN_1yr
+#SBATCH --nodelist=bgpu-dhl1
 #SBATCH --account=blanca-kann
+#SBATCH --gres=gpu
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --output=/pl/active/machinelearning/Solar_forecasting_project/job_outputs/tcn_week_ahead_with_attn_no_quantile.%j.out
+#SBATCH --ntasks=8
+#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/large_FCN_1yr.%j.out
 
 # === 3. Purge and load needed modules ===
 module purge
@@ -18,5 +19,5 @@ module load python/3.6.5
 echo "Set environment variables or create directories here!"
 
 # === 5. Running the program ===
-python -u ../script_run_CNN.py
+python -u ../script_learn_predictions_with_CNN.py
 

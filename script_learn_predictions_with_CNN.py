@@ -1,14 +1,15 @@
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-from Sea_level_prediction.ModuleLearning import preprocessing
-from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
+from ModuleLearning import preprocessing
+from ModuleLearning.ModuleCNN import train as train_cnn
 
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
 path_project = path_local
 path_data = path_project+"Data/"
+path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
 models = ['MPI-ESM1-2-HR'] #,'MPI-ESM1-2-LR', 'ACCESS-ESM1-5','MIROC-ES2L']
@@ -31,23 +32,25 @@ quantile = False
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
-
+sub_reg = "cnn_with_1yr_lag_large_channels"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
-batch_size = 16
-epochs = 1
-lr = 1e-3
+
+batch_size = 8
+epochs = 200
+lr = 1e-4
+
 
 def main():
 
     for model in models:
 
-        folder_saving = path_data_fr+ model + "/" + reg + "/"
+        folder_saving = path_models+ model + "/" + reg + "/"+ sub_reg + "/"
         os.makedirs(
-            path_data_fr + model + "/" + reg + "/", exist_ok=True)
+            folder_saving, exist_ok=True)
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years)
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
