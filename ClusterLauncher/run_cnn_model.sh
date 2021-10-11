@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # === 2. List of SBATCH arguements ===
-#SBATCH --job-name=run_large_FCN_1yr
+#SBATCH --job-name=run_unet
 #SBATCH --nodelist=bgpu-dhl1
 #SBATCH --account=blanca-kann
 #SBATCH --gres=gpu
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
 #SBATCH --ntasks=8
-#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/large_FCN_1yr.%j.out
+#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/unet_1yr.%j.out
 
 # === 3. Purge and load needed modules ===
 module purge

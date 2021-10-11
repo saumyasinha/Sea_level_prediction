@@ -7,7 +7,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
@@ -32,12 +32,12 @@ quantile = False
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
-sub_reg = "cnn_with_1yr_lag_small_channels"
+sub_reg = "cnn_with_1yr_lag_small_channels_with_dropout"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 24
+n_prev_months = 12
 
 batch_size = 8
 epochs = 200
