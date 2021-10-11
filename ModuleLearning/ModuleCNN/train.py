@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn
+# from Sea_level_prediction.ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
+# from Sea_level_prediction.ModuleLearning import eval
 from ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
 from ModuleLearning import eval
 
