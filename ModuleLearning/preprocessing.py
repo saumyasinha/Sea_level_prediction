@@ -91,8 +91,38 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     return train, test
 
 
+def get_image_patches(X,y):
 
+    X_with_patches = []
+    y_with_patches = []
+    for row in range(X.shape[0]):
+        X_row = X[row]
+        y_row = y[row]
+        subs_X = []
+        subs_Y = []
 
+        i=0
+        while i<360:
+            j=0
+            while j<180:
+                subX = X_row[i:i+90,j:j+45,:]
+                subY = y_row[i:i+90,j:j+45]
+
+                subs_X.append(subX)
+                subs_Y.append(subY)
+
+                j = j+45
+
+            i = i + 90
+
+        X_with_patches.append(subs_X)
+        y_with_patches.append(subs_Y)
+    # print(X_with_patches[0][0].shape)
+    X_with_patches = np.concatenate(X_with_patches)
+    y_with_patches = np.concatenate(y_with_patches)
+
+    print(X_with_patches.shape, y_with_patches.shape)
+    return X_with_patches,y_with_patches
 
 #
 # 'MPI-ESM1-2-HR'

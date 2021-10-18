@@ -1,9 +1,9 @@
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-# from Sea_level_prediction.ModuleLearning import preprocessing
+# from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
-from ModuleLearning import preprocessing
+from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
@@ -34,15 +34,16 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-sub_reg = "cnn_with_1yr_lag_unet"
-
+sub_reg = "cnn_with_1yr_lag_small_channels_with_dropout"
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 
-batch_size = 1
-epochs = 200
+
+batch_size = 16
+epochs = 250
+
 lr = 1e-4
 
 
@@ -93,13 +94,27 @@ def main():
 
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
+        X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
+        X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)
+        X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
+
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-#        train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        y_valid_copy = y_valid.copy() #if you are not doing this then pass X_valid and y_valid as None
-        valid_rmse, valid_mae, test_rmse, test_mae = train_cnn.basic_CNN_test(X_valid, y_valid_copy, X_test, y_test, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
+
+        train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
+        y_valid_w_patches_copy = y_valid_w_patches.copy() #if you are not doing this then pass X_valid and y_valid as None
+        valid_rmse, valid_mae, test_rmse, test_mae, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
+
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
+        # # yr_1993 = y_train[63*12]
+        # y_pred = np.load(folder_saving+"/test_predictions.npy")
+        # print(y_pred.shape)
+        # yr_JAN2021 = y_test[0]
+        # yr_JAN2021_pred =y_pred[0]
+        # eval.plot(yr_JAN2021, test_mask[0], "model_2021JAN_sla")
+        # eval.plot(yr_JAN2021_pred, test_mask[0], "predicted_2021JAN_sla")
+
 
 if __name__=='__main__':
     main()
