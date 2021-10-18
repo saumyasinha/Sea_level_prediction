@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn
+# from Sea_level_prediction.ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
+# from Sea_level_prediction.ModuleLearning import eval
 from ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
 from ModuleLearning import eval
 
@@ -52,21 +54,26 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
     basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
 
-    basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
-
+    basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved)) #, map_location=torch.device('cpu')))
+    if torch.cuda.is_available():
+        basic_forecaster.cuda() 
     basic_forecaster.eval()
-
+    
     if X_test is not None:
+        if torch.cuda.is_available():
+            X_test = X_test.cuda()
         y_pred = basic_forecaster.forward(X_test)
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
         print(y_pred.shape)
- #       np.save(folder_saving + "/" + "test_predictions.npy", y_pred)
+        np.save(folder_saving + "/" + "test_predictions.npy", y_pred)
         test_rmse, test_mae = eval.evaluation_metrics(y_pred, y_test, test_mask)
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
     if X_valid is not None:
+        if torch.cuda.is_available():
+            X_valid = X_valid.cuda()
         y_valid_pred = basic_forecaster.forward(X_valid)
         # validLoss = MaskedMSELoss(y_valid_pred, y_valid, valid_mask)
         y_valid_pred = y_valid_pred.cpu().detach().numpy()

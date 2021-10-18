@@ -1,9 +1,10 @@
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
+# from Sea_level_prediction.ModuleLearning import preprocessing
+# from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
 from ModuleLearning import preprocessing
 from ModuleLearning.ModuleCNN import train as train_cnn
-
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
@@ -32,16 +33,18 @@ quantile = False
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
-sub_reg = "cnn_with_1yr_lag_small_channels_with_dropout"
+
+sub_reg = "cnn_with_1yr_lag_unet"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 
-batch_size = 8
+batch_size = 1
 epochs = 200
 lr = 1e-4
+
 
 
 def main():
@@ -91,7 +94,7 @@ def main():
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-        train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
+#        train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
         y_valid_copy = y_valid.copy() #if you are not doing this then pass X_valid and y_valid as None
         valid_rmse, valid_mae, test_rmse, test_mae = train_cnn.basic_CNN_test(X_valid, y_valid_copy, X_test, y_test, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')

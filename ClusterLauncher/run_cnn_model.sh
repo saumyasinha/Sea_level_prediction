@@ -4,7 +4,7 @@
 #SBATCH --job-name=run_unet
 #SBATCH --nodelist=bgpu-dhl1
 #SBATCH --account=blanca-kann
-#SBATCH --gres=gpu
+#SBATCH --gres=gpu:2
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
 #SBATCH --ntasks=8
