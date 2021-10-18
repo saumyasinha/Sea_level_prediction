@@ -1,11 +1,34 @@
 import numpy as np
 import netCDF4
 import os, gzip, shutil
+# import matplotlib.pyplot as plt
+# import cartopy.crs as ccrs
 
 path_project = "/Users/saumya/Desktop/Sealevelrise/"
 path_data = path_project+"Data/"
 path_data_obs = path_data + "Observations/"
 
+
+# def plot(obs_nc):
+#     dataset = netCDF4.Dataset(obs_nc)
+#
+#     for var in dataset.variables.values():
+#         print(var)
+#
+#     sla = dataset.variables['sla'][0, :, :]
+#     lats = dataset.variables['latitude'][:]
+#     print(lats.min(),lats.max())
+#     lons = dataset.variables['longitude'][:]
+#     print(lons.min(), lons.max())
+#     ax = plt.axes(projection=ccrs.PlateCarree())
+#
+#     plt.contourf(lons, lats, sla, 60,cmap="jet",
+#                  transform=ccrs.PlateCarree())
+#
+#     ax.coastlines()
+#     plt.colorbar()
+#
+#     plt.savefig("observations_1993")
 
 
 def remove_land_values(xr):
@@ -56,6 +79,7 @@ def main():
 
     xr = remove_land_values(total_obs_array)
     np.save(path_data_obs + 'observations.npy', xr)
+    # plot("/Users/saumya/Desktop/Sealevelrise/Data/Observations/1993/dt_global_allsat_msla_h_y1993_m01.nc")
 
 
 if __name__=='__main__':

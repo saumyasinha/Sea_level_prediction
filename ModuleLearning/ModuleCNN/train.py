@@ -12,6 +12,7 @@ def get_target_mask(y):
     # print(y[:5,0,0])
     missing_val = 1e+36
     mask = (y != missing_val)
+    print("mask",mask.shape)
     # print("num of ocean pixels: ", mask.sum())
     y[y == missing_val] = 0
     return y, mask
@@ -34,7 +35,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_timesteps,
                                             alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
     loss_plots(train_loss, valid_loss, folder_saving, model_saved)
 
-    return train_mask, valid_mask
+    # return train_mask, valid_mask
 
 
 def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas, n_predictions = 1):
@@ -42,13 +43,13 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
         X_valid = X_valid.permute(0, 3, 1, 2)
-        y_valid, valid_mask = get_target_mask(y_valid)
+        # y_valid, valid_mask = get_target_mask(y_valid)
 
     if X_test is not None:
         X_test = torch.from_numpy(X_test)
         X_test = X_test.permute(0, 3, 1, 2)
-        y_test, test_mask = get_target_mask(y_test)
 
+    valid_rmse, valid_mae, test_rmse, test_mae, test_mask = 0,0,0,0,None
 
     outputs_quantile = len(alphas)
 
@@ -63,8 +64,11 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
         print(y_pred.shape)
- #       np.save(folder_saving + "/" + "test_predictions.npy", y_pred)
-        test_rmse, test_mae = eval.evaluation_metrics(y_pred, y_test, test_mask)
+        y_test_wo_patches = eval.combine_image_patches(y_test)
+        y_pred_wo_patches = eval.combine_image_patches(y_pred)
+        np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+        y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
+        test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask)
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
@@ -73,11 +77,15 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         # validLoss = MaskedMSELoss(y_valid_pred, y_valid, valid_mask)
         y_valid_pred = y_valid_pred.cpu().detach().numpy()
         print(y_valid_pred.shape)
-#        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred)
-        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred, y_valid, valid_mask)
+
+        y_valid_wo_patches = eval.combine_image_patches(y_valid)
+        y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
+        y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
+        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
+
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 
-    return valid_rmse, valid_mae, test_rmse, test_mae
+    return valid_rmse, valid_mae, test_rmse, test_mae, test_mask
 
 
 def loss_plots(train_loss, valid_loss, folder_saving, loss_type=""):
