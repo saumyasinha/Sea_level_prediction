@@ -2,7 +2,7 @@ import numpy as np
 from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
+# import cartopy.crs as ccrs
 
 
 def evaluation_metrics(pred, target, mask):
@@ -40,9 +40,10 @@ def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
     obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
-    zos_gt = dataset.variables['zos'][80*12, :, :]
+    zos_gt = dataset.variables['zos'][-12,:, :]
     print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
     zos = np.transpose(xr)
+    # zos = xr
     print(np.min(zos), np.max(zos), zos.shape)
     zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
     print(np.min(zos), np.max(zos), zos.shape)
@@ -54,7 +55,7 @@ def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
 
     ax = plt.axes(projection=ccrs.PlateCarree())
 
-    plt.contourf(lons, lats, zos, 60, cmap="jet",
+    plt.contourf(lons,lats, zos, 60, cmap="jet",
                  transform=ccrs.PlateCarree())
 
     ax.coastlines()

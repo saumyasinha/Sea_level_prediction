@@ -30,16 +30,17 @@ def read_nc_files(path):
             fp = path_nc+filename
             nc = netCDF4.Dataset(fp)
             #
-            # for var in nc.variables.values():
-            #     print(var)
+            for var in nc.variables.values():
+                print(var)
 
             zos = np.array(nc.variables['zos'][:])  # type(nc.variables))
             print(zos.shape)
             zos = np.transpose(zos)
-            print(zos.shape)
-            np.save(path_nc + filename[:-4] + '.npy', zos)
+            print(zos.shape, np.min(zos), np.max(zos))
+            # print(zos[:5, :5, :5])
+            np.save(path_nc + filename[:-7] + '.npy', zos)
 
-            os.remove(path_nc + filename)
+            # os.remove(path_nc + filename)
 
 def read_binary_files(path):
     nlat = 180
@@ -88,13 +89,13 @@ def main():
 
 
 if __name__=='__main__':
-   # main()
-    zos_bin = np.load("/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.npy")
-    zos_bin_1850 = zos_bin[:,:,0]
-    print(np.min(zos_bin_1850), np.max(zos_bin_1850), zos_bin_1850.shape)
-
-    zos_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
-    dataset = netCDF4.Dataset(zos_nc)
-
-    zos_nc_1850 = dataset.variables['zos'][0, :, :]
-    print(np.min(zos_nc_1850), np.max(zos_nc_1850), zos_nc_1850.shape)
+    main()
+    # zos_bin = np.load("/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.npy")
+    # zos_bin_1850 = zos_bin[:,:,0]
+    # print(np.min(zos_bin_1850), np.max(zos_bin_1850), zos_bin_1850.shape)
+    #
+    # zos_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    # dataset = netCDF4.Dataset(zos_nc)
+    #
+    # zos_nc_1850 = dataset.variables['zos'][0, :, :]
+    # print(np.min(zos_nc_1850), np.max(zos_nc_1850), zos_nc_1850.shape)

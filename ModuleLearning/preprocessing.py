@@ -60,10 +60,10 @@ def year_start_index(year):
 def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years):
 
     '''
-    if train_start_year = 1990, train_end_year = 1990,
+    if train_start_year = 1900, train_end_year = 1990,
     test_start_year = 1991, test_end_year = 2020
     and  lead_years = 30, n_prev_months = 12
-    then this function returns train: 1989 - 1990, test: 1990 - 2050
+    then this function returns train: 1899 - 1990, test: 1990 - 2050
     '''
     historical_filename = path_1850_to_2014 + "historical_"+model+"_zos_fr_1850_2014.npy"
     historical_array = np.load(historical_filename)

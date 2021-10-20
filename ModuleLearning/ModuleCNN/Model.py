@@ -86,64 +86,58 @@ class FullyConvNet(nn.Module):
         else:
             last_channel_size = 1
 
-
-        # Samll FCN
-        # self.encoder = nn.Sequential(
-        #    nn.Conv2d(dim_channels, 24, (3,3),stride=2, padding = 1),
-        #    nn.BatchNorm2d(24),
-        #    nn.ReLU(),
-        #    nn.Conv2d(24, 48,(3,3), stride=2,padding = 1),
-        #    nn.BatchNorm2d(48),
-        #    nn.ReLU(),
-        #    nn.Dropout(0.3),
-        #    nn.Conv2d(48, 96, (3,3), stride=2, padding = 1),
-        #    nn.BatchNorm2d(96),
-        #    nn.ReLU(),
-        #    nn.Dropout(0.3)
-        # )
-        #    # nn.Conv2d(48, 96, 4, stride=2, padding=1),
-        #    # nn.ReLU(),
-        #
-        # self.decoder = nn.Sequential(
-        #    #             nn.ConvTranspose2d(96, 48, 4, stride=2, padding=1),
-        #    #             nn.ReLU(),
-        #    nn.ConvTranspose2d(96, 48, (3,3), stride = 2, padding = (0,1)), #91*45
-        #    nn.BatchNorm2d(48),
-        #    nn.ReLU(),
-        #     nn.Dropout(0.3),
-        #    nn.ConvTranspose2d(48, 24,(3,3), stride=2, padding = 1), #181*89
-        #    nn.BatchNorm2d(24),
-        #    nn.ReLU(),
-        #    nn.ConvTranspose2d(24, last_channel_size, (2, 4), stride=2, padding = (1,0)) #360*180
-        #    # nn.Sigmoid(),
-        # )
-        
-        ## Large FCN
+        ## smaller FCN
         self.encoder = nn.Sequential(
-            nn.Conv2d(dim_channels, 24, (3,3), stride=2, padding = 1),  #45*23
-            nn.BatchNorm2d(24),
-            nn.ReLU(),
-            nn.Conv2d(24, 48,(3,3),stride=2,  padding = 1),#23*12
-            nn.BatchNorm2d(48),
-            nn.ReLU(),
-            nn.Conv2d(48, 96, (3,3), stride =2, padding = 1), #12*6
-            nn.BatchNorm2d(96),
-            nn.ReLU(),
-            nn.Dropout(0.3)
 
-        )
-        self.decoder = nn.Sequential(
-
-            nn.ConvTranspose2d(96, 48, (3,2), stride = 2, padding = (1,0)), #23*12
-            nn.BatchNorm2d(48),
+            nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.Conv2d(16, 32,(3,3),stride=2,  padding = 1),#23*12
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.ConvTranspose2d(48, 24,(3,3), stride=2, padding = 1), #45*23
-            nn.BatchNorm2d(24),
+            nn.Conv2d(32, 64, (3,3), stride =2, padding = 1), #12*6
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.ConvTranspose2d(24, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
-            # nn.Sigmoid(),
-        )
+            nn.Dropout(0.3))
+
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(64, 32, (3,2), stride = 2, padding = (1,0)), #23*12
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.ConvTranspose2d(32, 16,(3,3), stride=2, padding = 1), #45*23
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.ConvTranspose2d(16, last_channel_size, (2, 3), stride=2, padding = (0,1))) #90*45
+
+        # ## SMALL fcn version2
+        # self.encoder = nn.Sequential(
+        #     nn.Conv2d(dim_channels, 32, (3, 3), stride=2, padding=1),  # 45*23
+        #     nn.BatchNorm2d(32),
+        #     nn.ReLU(),
+        #     nn.Conv2d(32, 64, (3, 3), stride=2, padding=1),  # 23*12
+        #     nn.BatchNorm2d(64),
+        #     nn.ReLU(),
+        #     nn.Conv2d(64, 128, (3, 3), stride=2, padding=1),  # 12*6
+        #     nn.BatchNorm2d(128),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.3)
+        # )
+        #
+        # self.decoder = nn.Sequential(
+        #     nn.ConvTranspose2d(128, 64, (3,2), stride = 2, padding = (1,0)), #23*12
+        #     nn.BatchNorm2d(64),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.3),
+        #     nn.ConvTranspose2d(64, 32,(3,3), stride=2, padding = 1), #45*23
+        #     nn.BatchNorm2d(32),
+        #     nn.ReLU(),
+        #     nn.ConvTranspose2d(32, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
+        #
+        #     # nn.Sigmoid(),
+        # )
 
 
         self.apply(weights_init)
@@ -170,6 +164,7 @@ class FullyConvNet(nn.Module):
 
 
 
+
 def trainBatchwise(trainX, trainY, validX,
                    validY, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
@@ -192,7 +187,7 @@ def trainBatchwise(trainX, trainY, validX,
 
     print(basic_forecaster)
 
-    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
+    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08) #, weight_decay = 1e-5)
     # scheduler = StepLR(optimizer, step_size=25, gamma=0.1)
     # criterion = torch.nn.MSELoss()
     # criterion = nn.L1Loss()
