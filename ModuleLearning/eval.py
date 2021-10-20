@@ -1,5 +1,6 @@
 import numpy as np
 from math import sqrt
+import netCDF4
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 
@@ -18,33 +19,47 @@ def evaluation_metrics(pred, target, mask):
 
 
 
-def plot(xr, mask, save_file = "model_2021JAN_sla"):
+def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
 
-
-    # fig, ax = plt.subplots()
+    # sla_masked = np.ma.masked_where(~mask, xr)
+    # sla_masked = np.transpose(sla_masked)
+    # print(sla_masked.shape, sla_masked.min(), sla_masked.max())
+    # lats = np.load(folder_saving+"/lats.npy",allow_pickle=True)
+    # lons = np.load(folder_saving+"/lons.npy",allow_pickle=True)
+    #
     # ax = plt.axes(projection=ccrs.PlateCarree())
     #
-    # ax.imshow(xr_masked, extent = [-180,180,-90,90],cmap=plt.cm.jet,vmin= xr_masked.min(), vmax= xr_masked.max(),
-    #              transform=ccrs.PlateCarree(), origin='lower', interpolation='none')
+    # plt.contourf(lons, lats, sla_masked, 60, cmap = "jet",
+    #              transform=ccrs.PlateCarree())
     #
     # ax.coastlines()
-    # ax.colorbar()
-    # # cbar.cmap.set_over('green')
-    # plt.savefig("true_1993JAN_sla")
-    sla_masked = np.ma.masked_where(~mask, xr)
-    sla_masked = np.transpose(sla_masked)
-    print(sla_masked.shape, sla_masked.min(), sla_masked.max())
-    lats = list(range(-89, 91))
-    lons = list(range(-180, 180))
+    # plt.colorbar()
+    # plt.savefig(folder_saving+"/"+save_file)
+    # plt.close()
+
+    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    dataset = netCDF4.Dataset(obs_nc)
+
+    zos_gt = dataset.variables['zos'][80*12, :, :]
+    print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
+    zos = np.transpose(xr)
+    print(np.min(zos), np.max(zos), zos.shape)
+    zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
+    print(np.min(zos), np.max(zos), zos.shape)
+    print(type(zos), type(zos_gt))
+    lats = dataset.variables['lat'][:]
+    print(lats.min(), lats.max())
+    lons = dataset.variables['lon'][:]
+    print(lons.min(), lons.max())
 
     ax = plt.axes(projection=ccrs.PlateCarree())
 
-    plt.contourf(lons, lats, sla_masked, 60, cmap = "jet",
+    plt.contourf(lons, lats, zos, 60, cmap="jet",
                  transform=ccrs.PlateCarree())
 
     ax.coastlines()
     plt.colorbar()
-    plt.savefig(save_file)
+    plt.savefig(folder_saving+"/"+save_file)
     plt.close()
 
 
@@ -65,7 +80,7 @@ def combine_image_patches(y_w_patches):
 
             y_stiched_col = [y_row[i + j] for j in range(4)]
             y_stiched_col = np.concatenate(y_stiched_col, axis=1)
-            print(y_stiched_col.shape)
+            # print(y_stiched_col.shape)
             # X_sup_row.append(X_sup_col)
             y_stiched_row.append(y_stiched_col)
 

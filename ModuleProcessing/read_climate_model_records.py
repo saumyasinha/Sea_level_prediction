@@ -1,4 +1,5 @@
 import numpy as np
+import netCDF4
 import os, gzip, shutil
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
@@ -20,6 +21,25 @@ def gz_extract(directory):
           os.remove(gz_name) # delete zipped file
 
 
+def read_nc_files(path):
+    path_nc = path+"/nc_files/"
+
+    for filename in os.listdir(path_nc):
+        if filename.endswith(".nc"):
+            print(filename)
+            fp = path_nc+filename
+            nc = netCDF4.Dataset(fp)
+            #
+            # for var in nc.variables.values():
+            #     print(var)
+
+            zos = np.array(nc.variables['zos'][:])  # type(nc.variables))
+            print(zos.shape)
+            zos = np.transpose(zos)
+            print(zos.shape)
+            np.save(path_nc + filename[:-4] + '.npy', zos)
+
+            os.remove(path_nc + filename)
 
 def read_binary_files(path):
     nlat = 180
@@ -45,6 +65,7 @@ def read_binary_files(path):
 
 
 
+
 def main():
 
     path_sealevel_folder = path_data_fr + "zos/"
@@ -58,12 +79,22 @@ def main():
     gz_extract(historical_path)
     gz_extract(future_path)
 
-    read_binary_files(historical_path)
-    read_binary_files(future_path)
+    # read_binary_files(historical_path)
+    # read_binary_files(future_path)
 
-
+    read_nc_files(historical_path)
+    read_nc_files(future_path)
 
 
 
 if __name__=='__main__':
-    main()
+   # main()
+    zos_bin = np.load("/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.npy")
+    zos_bin_1850 = zos_bin[:,:,0]
+    print(np.min(zos_bin_1850), np.max(zos_bin_1850), zos_bin_1850.shape)
+
+    zos_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    dataset = netCDF4.Dataset(zos_nc)
+
+    zos_nc_1850 = dataset.variables['zos'][0, :, :]
+    print(np.min(zos_nc_1850), np.max(zos_nc_1850), zos_nc_1850.shape)

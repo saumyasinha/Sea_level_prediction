@@ -14,7 +14,7 @@ def get_target_mask(y):
     mask = (y != missing_val)
     print("mask",mask.shape)
     # print("num of ocean pixels: ", mask.sum())
-    y[y == missing_val] = 0
+    # y[y == missing_val] = 0
     return y, mask
 
 def basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, n_predictions =1):
@@ -81,11 +81,12 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         y_valid_wo_patches = eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
+        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
 
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 
-    return valid_rmse, valid_mae, test_rmse, test_mae, test_mask
+    return valid_rmse, valid_mae, test_rmse, test_mae
 
 
 def loss_plots(train_loss, valid_loss, folder_saving, loss_type=""):

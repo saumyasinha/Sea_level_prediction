@@ -1,14 +1,14 @@
 import numpy as np
 import netCDF4
 import os, gzip, shutil
-# import matplotlib.pyplot as plt
-# import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 
 path_project = "/Users/saumya/Desktop/Sealevelrise/"
 path_data = path_project+"Data/"
 path_data_obs = path_data + "Observations/"
 
-
+#
 # def plot(obs_nc):
 #     dataset = netCDF4.Dataset(obs_nc)
 #
@@ -28,7 +28,9 @@ path_data_obs = path_data + "Observations/"
 #     ax.coastlines()
 #     plt.colorbar()
 #
-#     plt.savefig("observations_1993")
+#     plt.savefig("model_1993")
+# plot("/Users/saumya/Desktop/Sealevelrise/Data/Observations/1993/dt_global_allsat_msla_h_y1993_m01.nc")
+
 
 
 def remove_land_values(xr):
@@ -79,8 +81,6 @@ def main():
 
     xr = remove_land_values(total_obs_array)
     np.save(path_data_obs + 'observations.npy', xr)
-    # plot("/Users/saumya/Desktop/Sealevelrise/Data/Observations/1993/dt_global_allsat_msla_h_y1993_m01.nc")
-
 
 if __name__=='__main__':
     main()
