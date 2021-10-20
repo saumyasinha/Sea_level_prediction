@@ -1,14 +1,14 @@
 #!/bin/bash
 # === 2. List of SBATCH arguements ===
-#SBATCH --job-name=unet
+#SBATCH --job-name=large_FCN_patches_changed_validation
 #SBATCH --partition=blanca-kann
 #SBATCH --account=blanca-kann
 #SBATCH --qos=blanca-kann
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu
 #SBATCH --nodes=1
-#SBATCH --ntasks=8
+#SBATCH --ntasks=12
 #SBATCH --time=1-00:00:00
-#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/unet.%j.out
+#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/large_FCN_patches_changed_Validation.%j.out
 # === 3. Purge and load needed modules ===
 module purge
 module load python/3.6.5

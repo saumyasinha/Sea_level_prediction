@@ -34,14 +34,14 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-sub_reg = "cnn_with_1yr_lag_small_channels_with_dropout"
+sub_reg = "cnn_with_1yr_lag_small_channels_with_dropout_changed_validation"
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 
 
-batch_size = 16
+batch_size = 4
 epochs = 250
 
 lr = 1e-4
@@ -85,7 +85,7 @@ def main():
         # X_train, X_valid, y_train, y_valid = train_test_split(
         #     X_train, y_train, test_size=0.2, random_state=42)
 
-        train_valid_split_index = len(X_train) - 120 #keeping later 10 years for validation
+        train_valid_split_index = len(X_train) - 3*120 #keeping later 10 years for validation
         X,y = X_train,y_train
         X_train = X[:train_valid_split_index]
         y_train = y[:train_valid_split_index]
@@ -99,9 +99,9 @@ def main():
         X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-
+        y_valid_w_patches_copy = y_valid_w_patches.copy()
         train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        y_valid_w_patches_copy = y_valid_w_patches.copy() #if you are not doing this then pass X_valid and y_valid as None
+#        y_valid_w_patches_copy = y_valid_w_patches.copy() #if you are not doing this then pass X_valid and y_valid as None
         valid_rmse, valid_mae, test_rmse, test_mae, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
 
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
