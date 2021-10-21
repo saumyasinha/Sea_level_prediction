@@ -17,6 +17,8 @@ def evaluation_metrics(pred, target, mask):
     return rmse, mae
 
 
+# def fit_trend():
+
 
 
 def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
@@ -37,10 +39,14 @@ def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
     # plt.savefig(folder_saving+"/"+save_file)
     # plt.close()
 
-    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_MPI-ESM1-2-HR_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
-    zos_gt = dataset.variables['zos'][-12,:, :]
+    # for var in dataset.variables.values():
+    #     print(var)
+    #
+    zos_gt = dataset.variables['zos'][71,:, :] #-12 for jan2014 71 for DEC2020
     print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
     zos = np.transpose(xr)
     # zos = xr
@@ -48,6 +54,9 @@ def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
     zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
     print(np.min(zos), np.max(zos), zos.shape)
     print(type(zos), type(zos_gt))
+
+    # diff = zos_gt - zos
+
     lats = dataset.variables['lat'][:]
     print(lats.min(), lats.max())
     lons = dataset.variables['lon'][:]

@@ -33,15 +33,14 @@ def include_prev_timesteps(X, n_timesteps):
     return X
 
 
-def create_labels(train, test, lead_years):
+def create_labels(train, test, lead_years, n_prev_months):
 
     n_months_train = train.shape[2]
     n_months_test = test.shape[2]
-    full_array = np.concatenate([train, test], axis=2)
+    full_array = np.concatenate([train, test[:,:,n_prev_months:]], axis=2) #remove the overlapping prev months from test
 
     X_train = train[:,:,:]
     y_train = full_array[:,:, lead_years*12:n_months_train+(lead_years*12)]
-
 
     X_test = test[:, :, :-lead_years * 12]
     y_test = test[:, :, lead_years * 12:]
@@ -74,7 +73,6 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     print(future_array.shape)
 
     full_array = np.concatenate([historical_array,future_array], axis=2)
-    # print(full_array.shape)
 
     #
     train_start_index = year_start_index(train_start_year)

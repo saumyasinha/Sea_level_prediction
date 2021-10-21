@@ -8,12 +8,12 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
-models = ['MPI-ESM1-2-HR'] #,'MPI-ESM1-2-LR', 'ACCESS-ESM1-5','MIROC-ES2L']
+models = ['CESM1LE'] #['MPI-ESM1-2-HR'] ,
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -34,7 +34,7 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-sub_reg = "cnn_with_1yr_lag_small_unet_changed_validation"
+sub_reg = "cnn_with_1yr_lag_small_fc_changed_validation_wo_batchnorm_dropout"
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
@@ -62,7 +62,7 @@ def main():
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
         # np.save(path_data_fr+ model + "/"+"test_for_" + str(test_start_year) + "-" + str(test_end_year) + ".npy", test)
 
-        X_train, y_train, X_test, y_test = preprocessing.create_labels(train, test, lead_years)
+        X_train, y_train, X_test, y_test = preprocessing.create_labels(train, test, lead_years,n_prev_months)
 
         ## remove land values
         X_train = preprocessing.remove_land_values(X_train)
@@ -81,7 +81,7 @@ def main():
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)
 
         print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-        print(np.min(X_train), np.max(X_train))
+
 
         # X_train, X_valid, y_train, y_valid = train_test_split(
         #     X_train, y_train, test_size=0.2, random_state=42)
@@ -110,12 +110,12 @@ def main():
 
         # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
         # print(y_valid_pred.shape)
-        #
-        # yr_JAN2014 = y_valid[-6*12]
-        # yr_JAN2014_pred =y_valid_pred[-6*12]
-        # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
-        # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
 
+        # yr_JAN2013 = y_valid[-7*12]
+        # yr_JAN2013_pred =y_valid_pred[-7*12]
+        # eval.plot(yr_JAN2013,folder_saving, "model_JAN2013_sla")
+        # eval.plot(yr_JAN2013_pred, folder_saving,"predicted_JAN2013_sla")
+        #
         # yr_DEC2020 = y_valid[-1]
         # yr_DEC2020_pred =y_valid_pred[-1]
         # eval.plot(yr_DEC2020,folder_saving, "model_DEC2020_sla")
