@@ -34,7 +34,7 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-sub_reg = "cnn_with_1yr_lag_small_unet_changed_validation"
+sub_reg = "cnn_with_1yr_lag_small_fc_changed_validation_wo_batchnorm_dropout"
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
