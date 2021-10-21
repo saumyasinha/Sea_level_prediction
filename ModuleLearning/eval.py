@@ -2,6 +2,7 @@ import numpy as np
 from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
+import numpy.polynomial.polynomial as poly
 # import cartopy.crs as ccrs
 
 
@@ -17,11 +18,27 @@ def evaluation_metrics(pred, target, mask):
     return rmse, mae
 
 
-# def fit_trend():
+def fit_trend(pred,target,mask):
+
+    lon = pred.shape[0]
+    lat = pred.shape[1]
+
+    fitted_coeff = np.full((lon,lat),1e+36)
+    for i in range(lon):
+        for j in range(lat):
+            mask_i_j = mask[:,i,j]
+            masked_pred, masked_target = pred[:,i,j][mask_i_j] , target[:,i,j][mask_i_j]
+            if len(masked_pred) >0:
+                fitted_all_coeffs = poly.polyfit(masked_pred, masked_target,1)
+                fitted_coeff[i,j] = fitted_all_coeffs[1]
+
+    return fitted_coeff
 
 
 
-def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
+
+
+def plot(xr, folder_saving, save_file, trend =False):
 
     # sla_masked = np.ma.masked_where(~mask, xr)
     # sla_masked = np.transpose(sla_masked)
@@ -46,16 +63,20 @@ def plot(xr, folder_saving, save_file = "model_2021JAN_sla"):
     # for var in dataset.variables.values():
     #     print(var)
     #
-    zos_gt = dataset.variables['zos'][71,:, :] #-12 for jan2014 71 for DEC2020
-    print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
-    zos = np.transpose(xr)
-    # zos = xr
-    print(np.min(zos), np.max(zos), zos.shape)
-    zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
-    print(np.min(zos), np.max(zos), zos.shape)
-    print(type(zos), type(zos_gt))
+    if trend==False:
+        zos_gt = dataset.variables['zos'][71,:, :] #-12 for jan2014 71 for DEC2020
+        print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
+        zos = np.transpose(xr)
+        # zos = xr
+        print(np.min(zos), np.max(zos), zos.shape)
+        zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
+        print(np.min(zos), np.max(zos), zos.shape)
+        print(type(zos), type(zos_gt))
 
     # diff = zos_gt - zos
+
+    else:
+        zos = np.ma.masked_where(1e+36, xr)
 
     lats = dataset.variables['lat'][:]
     print(lats.min(), lats.max())
