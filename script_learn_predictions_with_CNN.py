@@ -95,6 +95,8 @@ def main():
 
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
+        X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
+
         X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
         X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)
         X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
@@ -103,23 +105,26 @@ def main():
 
         y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
         train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, n_features, n_prev_months+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        valid_rmse, valid_mae, test_rmse, test_mae = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_months+1, folder_saving, model_saved, quantile, alphas)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
 
         # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
         # print(y_valid_pred.shape)
-
-        # yr_JAN2013 = y_valid[-7*12]
-        # yr_JAN2013_pred =y_valid_pred[-7*12]
-        # eval.plot(yr_JAN2013,folder_saving, "model_JAN2013_sla")
-        # eval.plot(yr_JAN2013_pred, folder_saving,"predicted_JAN2013_sla")
+        #
+        # yr_JAN2014 = y_valid[-7*12]
+        # yr_JAN2014_pred =y_valid_pred[-7*12]
+        # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
+        # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
         #
         # yr_DEC2020 = y_valid[-1]
         # yr_DEC2020_pred =y_valid_pred[-1]
         # eval.plot(yr_DEC2020,folder_saving, "model_DEC2020_sla")
         # eval.plot(yr_DEC2020_pred, folder_saving,"predicted_DEC2020_sla")
+
+        # trend = eval.fit_trend(y_valid_pred, valid_mask)
+        # eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
 
 
 

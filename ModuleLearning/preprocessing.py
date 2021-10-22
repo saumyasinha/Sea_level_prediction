@@ -68,7 +68,7 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     historical_array = np.load(historical_filename)
     print(historical_array.shape)
 
-    future_filename = path_2015_to_2100 + "ssp370_" + model + "_zos_fr_2015_2100.npy"
+    future_filename = path_2015_to_2100 + "rcp85_" + model + "_zos_fr_2015_2100.npy"
     future_array = np.load(future_filename)
     print(future_array.shape)
 
@@ -122,18 +122,21 @@ def get_image_patches(X,y):
     print(X_with_patches.shape, y_with_patches.shape)
     return X_with_patches,y_with_patches
 
-#
-# 'MPI-ESM1-2-HR'
-# -2.0821238 1.6953052 -2.0989676 1.7183158
-#
-# 'MPI-ESM1-2-LR'
-# -1.960577 1.7667885 -1.9656749 1.7706753
-#
-# 'ACCESS-ESM1-5'
-# -6.533461 0.0 -6.3966355 0.0
-#
-#
-# X_train, y_train shapes (360, 180, 336) (360, 180, 336)
-# X_test, y_test shapes (360, 180, 600) (360, 180, 600)
 
+
+def normalize_from_train(X_train, X_valid, X_test):
+    # min = np.min(X_train,axis=0)
+    max = np.max(X_train,axis=0)
+    # mean = np.mean(X_train,axis=0)
+    # std = np.std(X_train,axis=0)
+
+    # print(np.any(std == 0))
+    X_train = X_train/100 #(X_train - mean)/std
+    X_valid = X_valid/100#(X_valid - mean)/std
+    X_test = X_test/100#(X_test - mean) /std
+
+
+    print(np.min(X_train), np.max(X_train))
+
+    return X_train, X_valid, X_test
 

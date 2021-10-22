@@ -18,18 +18,34 @@ def evaluation_metrics(pred, target, mask):
     return rmse, mae
 
 
-def fit_trend(pred,target,mask):
+def fit_trend(pred, mask):
 
-    lon = pred.shape[0]
-    lat = pred.shape[1]
+    lon = pred.shape[1]
+    lat = pred.shape[2]
+    missing_val = 1e+36
+    n_years = int(pred.shape[0]/12)
+    x = list(range(2001,2021))
+    print(n_years, len(x))
 
-    fitted_coeff = np.full((lon,lat),1e+36)
+    y = []
+    for i in range(0,n_years):
+        annual_pred = np.mean(pred[i:i+12,:,:], axis=0)
+        # print(annual_pred.shape)
+        y.append(annual_pred)
+
+    y = np.stack(y)
+    print(y.shape)
+
+    fitted_coeff = np.full((lon,lat),missing_val)
     for i in range(lon):
         for j in range(lat):
+            y_i_j = y[:,i,j]
+            # print(y_i_j.shape)
             mask_i_j = mask[:,i,j]
-            masked_pred, masked_target = pred[:,i,j][mask_i_j] , target[:,i,j][mask_i_j]
-            if len(masked_pred) >0:
-                fitted_all_coeffs = poly.polyfit(masked_pred, masked_target,1)
+
+            if np.all(mask_i_j==True):
+                fitted_all_coeffs = poly.polyfit(x, y_i_j,1)
+                # print(fitted_all_coeffs)
                 fitted_coeff[i,j] = fitted_all_coeffs[1]
 
     return fitted_coeff
@@ -56,15 +72,15 @@ def plot(xr, folder_saving, save_file, trend =False):
     # plt.savefig(folder_saving+"/"+save_file)
     # plt.close()
 
-    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
-    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_MPI-ESM1-2-HR_zos_fr_2015_2100.bin.nc"
+    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
+    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_MPI-ESM1-2-HR_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
     # for var in dataset.variables.values():
     #     print(var)
     #
     if trend==False:
-        zos_gt = dataset.variables['zos'][71,:, :] #-12 for jan2014 71 for DEC2020
+        zos_gt = dataset.variables['SSH'][-12,:, :] #-12 for jan2014 71 for DEC2020
         print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
         zos = np.transpose(xr)
         # zos = xr
@@ -76,7 +92,10 @@ def plot(xr, folder_saving, save_file, trend =False):
     # diff = zos_gt - zos
 
     else:
-        zos = np.ma.masked_where(1e+36, xr)
+        zos = np.transpose(xr)
+        print(np.min(zos), np.max(zos), zos.shape)
+        zos = np.ma.masked_where(zos==1e+36, zos)
+        print(np.min(zos), np.max(zos), zos.shape)
 
     lats = dataset.variables['lat'][:]
     print(lats.min(), lats.max())

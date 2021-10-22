@@ -52,12 +52,15 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
     valid_rmse, valid_mae, test_rmse, test_mae, test_mask = 0,0,0,0,None
 
     outputs_quantile = len(alphas)
-
+    print(torch.cuda.is_available())
     basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
 
-    basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved)) #, map_location=torch.device('cpu')))
+    # basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved)) #, map_location=torch.device('cpu'))
     if torch.cuda.is_available():
-        basic_forecaster.cuda() 
+        basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved))
+    else:
+        basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
+
     basic_forecaster.eval()
     
     if X_test is not None:
@@ -70,7 +73,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
         y_test_wo_patches = eval.combine_image_patches(y_test)
         y_pred_wo_patches = eval.combine_image_patches(y_pred)
-        np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+        # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
         y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
         test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask)
 
@@ -87,13 +90,13 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
         y_valid_wo_patches = eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
-        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
+        # np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
 
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 
-    return valid_rmse, valid_mae, test_rmse, test_mae
+    return valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask
 
 
 def loss_plots(train_loss, valid_loss, folder_saving, loss_type=""):
