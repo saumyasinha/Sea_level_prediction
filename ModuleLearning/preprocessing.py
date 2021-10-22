@@ -68,7 +68,7 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     historical_array = np.load(historical_filename)
     print(historical_array.shape)
 
-    future_filename = path_2015_to_2100 + "ssp370_" + model + "_zos_fr_2015_2100.npy"
+    future_filename = path_2015_to_2100 + "rcp85_" + model + "_zos_fr_2015_2100.npy"
     future_array = np.load(future_filename)
     print(future_array.shape)
 
