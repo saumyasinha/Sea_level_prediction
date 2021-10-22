@@ -19,19 +19,19 @@ class UNet(nn.Module):
     def __init__(self, dim_channels, last_channel_size):
         super().__init__()
 
-        self.dconv_down1 = double_conv(dim_channels, 64, kernel = (3,3), padding = (1,0))
-        self.dconv_down2 = double_conv(64, 128,  kernel = (3,3), padding = (1,1))
-        self.dconv_down3 = double_conv(128, 256,  kernel = (3,3), padding = (1,1))
+        self.dconv_down1 = double_conv(dim_channels, 16, kernel = (3,3), padding = (1,0))
+        self.dconv_down2 = double_conv(16, 32,  kernel = (3,3), padding = (1,1))
+        self.dconv_down3 = double_conv(32, 64,  kernel = (3,3), padding = (1,1))
         #self.dconv_down4 = double_conv(256, 512,  kernel = (3,3), padding = (1,1))
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         #self.dconv_up3 = double_conv(256 + 512, 256,kernel = (3,3), padding = (1,1))
-        self.dconv_up2 = double_conv(128 + 256, 128, kernel = (3,3), padding = (1,1))
-        self.dconv_up1 = double_conv(128 + 64, 64,kernel = (3,3), padding = (1,2))
+        self.dconv_up2 = double_conv(32 + 64, 32, kernel = (3,3), padding = (1,1))
+        self.dconv_up1 = double_conv(32 + 16, 16,kernel = (3,3), padding = (1,2))
 
-        self.conv_last = nn.Conv2d(64, last_channel_size, 1)
+        self.conv_last = nn.Conv2d(16, last_channel_size, 1)
 
     def forward(self, x):
         # conv1 = self.dconv_down1(x)
