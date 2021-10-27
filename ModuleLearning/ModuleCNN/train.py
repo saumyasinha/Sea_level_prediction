@@ -3,16 +3,16 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn
-# from Sea_level_prediction.ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
-# from Sea_level_prediction.ModuleLearning import eval
-from ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
-from ModuleLearning import eval
+from Sea_level_prediction.ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
+from Sea_level_prediction.ModuleLearning import eval
+# from ModuleLearning.ModuleCNN.Model import trainBatchwise,FullyConvNet,MaskedMSELoss,MaskedL1Loss
+# from ModuleLearning import eval
 
 def get_target_mask(y):
     # print(y[:5,0,0])
     missing_val = 1e+36
     mask = (y != missing_val)
-    print("mask",mask.shape)
+    print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
     # y[y == missing_val] = 0
     return y, mask
@@ -73,7 +73,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
         y_test_wo_patches = eval.combine_image_patches(y_test)
         y_pred_wo_patches = eval.combine_image_patches(y_pred)
-        # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+        np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
         y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
         test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask)
 
@@ -90,7 +90,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
         y_valid_wo_patches = eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
-        # np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
+        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
 

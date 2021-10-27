@@ -68,7 +68,7 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     historical_array = np.load(historical_filename)
     print(historical_array.shape)
 
-    future_filename = path_2015_to_2100 + "rcp85_" + model + "_zos_fr_2015_2100.npy"
+    future_filename = path_2015_to_2100 + "rcp85_" + model + "_zos_fr_2015_2100.npy" #ssp370/rcp85
     future_array = np.load(future_filename)
     print(future_array.shape)
 
@@ -88,6 +88,24 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     print(np.min(train), np.max(train), np.min(test), np.max(test), np.isnan(train).sum(), np.isnan(test).sum())
     return train, test
 
+def convert_month_to_years(X):
+    n_months = X.shape[2]
+    n_years = int(n_months / 12)
+
+    X_yrs = []
+    i = 0
+    for yr in range(0, n_years):
+        X_sub = X[:,:,i:i + 12]
+        annual_X = np.mean(X_sub, axis=2)
+        annual_X[annual_X>1e+36]=1e+36
+        # print(annual_X.shape)
+        X_yrs.append(annual_X)
+        i = i + 12
+
+    X_yrs = np.stack(X_yrs, axis=2)
+    print(X_yrs.shape)
+
+    return X_yrs
 
 def get_image_patches(X,y):
 

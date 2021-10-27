@@ -3,7 +3,7 @@ from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-# import cartopy.crs as ccrs
+import cartopy.crs as ccrs
 
 
 def evaluation_metrics(pred, target, mask):
@@ -18,23 +18,33 @@ def evaluation_metrics(pred, target, mask):
     return rmse, mae
 
 
-def fit_trend(pred, mask):
+def fit_trend(pred, mask, yearly = False):
 
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    n_years = int(pred.shape[0]/12)
     x = list(range(2001,2021))
+    n_years = int(pred.shape[0] / 12)
+    if yearly:
+        n_years = pred.shape[0]
+
     print(n_years, len(x))
 
-    y = []
-    for i in range(0,n_years):
-        annual_pred = np.mean(pred[i:i+12,:,:], axis=0)
-        # print(annual_pred.shape)
-        y.append(annual_pred)
+    y = pred
+    if yearly==False:
+        y = []
+        i=0
+        for yr in range(0,n_years):
+            print(i)
+            annual_pred = np.mean(pred[i:i+12,:,:], axis=0)
+            print(annual_pred.shape)
+            y.append(annual_pred)
+            i=i+12
 
-    y = np.stack(y)
+        y = np.stack(y)
     print(y.shape)
+
+    # plot_global_mean_sea_level(x, y)
 
     fitted_coeff = np.full((lon,lat),missing_val)
     for i in range(lon):
@@ -50,7 +60,17 @@ def fit_trend(pred, mask):
 
     return fitted_coeff
 
-
+#
+# def plot_global_mean_sea_level(x,y,missing_val = 1e+36):
+#     y[y==missing_val] = 0
+#     global_mean = np.mean(y,axis=(1,2))
+#
+#     fig, ax = plt.subplots(1)
+#     ax.plot(x, global_mean)
+#     ax.set_xticks(x)
+#     ax.set_yticks(global_mean)
+#     plt.savefig("global_mean_trend_2001-2020")
+#     plt.close()
 
 
 
@@ -73,14 +93,14 @@ def plot(xr, folder_saving, save_file, trend =False):
     # plt.close()
 
     obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
-    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_MPI-ESM1-2-HR_zos_fr_2015_2100.bin.nc"
+    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
     # for var in dataset.variables.values():
     #     print(var)
     #
     if trend==False:
-        zos_gt = dataset.variables['SSH'][-12,:, :] #-12 for jan2014 71 for DEC2020
+        zos_gt = dataset.variables['SSH'][-12,:, :]/100 #-12 for jan2014 71 for DEC2020
         print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
         zos = np.transpose(xr)
         # zos = xr

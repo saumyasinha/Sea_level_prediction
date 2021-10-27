@@ -22,7 +22,7 @@ def gz_extract(directory):
 
 
 def read_nc_files(path):
-    path_nc = path+"/nc_files/"
+    path_nc = path+"/npy_files/"
 
     for filename in os.listdir(path_nc):
         if filename.endswith(".nc"):
@@ -33,14 +33,14 @@ def read_nc_files(path):
             for var in nc.variables.values():
                 print(var)
 
-            zos = np.array(nc.variables['SSH'][:])  # type(nc.variables))
+            zos = np.array(nc.variables['zos'][:])  #cesm-SSH
             print(zos.shape)
             zos = np.transpose(zos)
             print(zos.shape, np.min(zos), np.max(zos))
             # print(zos[:5, :5, :5])
             np.save(path_nc + filename[:-7] + '.npy', zos)
 
-            # os.remove(path_nc + filename)
+            os.remove(path_nc + filename)
 
 def read_binary_files(path):
     nlat = 180
