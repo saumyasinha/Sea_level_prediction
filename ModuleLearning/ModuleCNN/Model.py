@@ -3,8 +3,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
-from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
-# from ModuleLearning.ModuleCNN.unet import UNet
+# from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
+from ModuleLearning.ModuleCNN.unet import UNet
 
 
 
@@ -88,7 +88,6 @@ class FullyConvNet(nn.Module):
     #
     #     # smaller FCN
         self.encoder = nn.Sequential(
-
             nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
            # nn.BatchNorm2d(16),
             nn.ReLU(),
@@ -97,11 +96,12 @@ class FullyConvNet(nn.Module):
             nn.ReLU(),
           #  nn.Dropout(0.3),
             nn.Conv2d(32, 64, (3,3), stride =2, padding = 1), #12*6
-           # nn.BatchNorm2d(64),
+         #   nn.BatchNorm2d(64),
             nn.ReLU())
-            #nn.Dropout(0.3))
+           # #nn.Dropout(0.3))
 
         self.decoder = nn.Sequential(
+
             nn.ConvTranspose2d(64, 32, (3,2), stride = 2, padding = (1,0)), #23*12
             # nn.BatchNorm2d(32),
             nn.ReLU(),
@@ -109,7 +109,7 @@ class FullyConvNet(nn.Module):
             nn.ConvTranspose2d(32, 16,(3,3), stride=2, padding = 1), #45*23
             # nn.BatchNorm2d(16),
             nn.ReLU(),
-            #nn.Dropout(0.3),
+            ##nn.Dropout(0.3),
             nn.ConvTranspose2d(16, last_channel_size, (2, 3), stride=2, padding = (0,1))) #90*45
 
         # ## SMALL fcn version2
@@ -146,12 +146,13 @@ class FullyConvNet(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)
-        # print(x.shape)
+      #  # print(x.shape)
         x = self.decoder(x)
-        # print(x.shape)
+       # # print(x.shape)
         x = torch.squeeze(x)
-        # print(x.shape)
+       # # print(x.shape)
         return x
+
 
     #     self.model = UNet(dim_channels,last_channel_size)
     # #
@@ -173,11 +174,11 @@ def trainBatchwise(trainX, trainY, validX,
 
     parallel = False
     if train_on_gpu:
-        if torch.cuda.device_count() > 1:
+      #  if torch.cuda.device_count() > 1:
            # print("Let's use", torch.cuda.device_count(), "GPUs!")
 
-            basic_forecaster = nn.DataParallel(basic_forecaster)
-            parallel = True
+    #        basic_forecaster = nn.DataParallel(basic_forecaster)
+     #       parallel = True
 
 
         basic_forecaster = basic_forecaster.cuda()
@@ -299,7 +300,7 @@ def MaskedMSELoss(pred, target, mask):
 
 
 def  MaskedL1Loss(pred, target, mask):
-
+    #print(pred.shape, target.shape, mask.shape)
     # mask = mask.detach()
     diff = target - pred
     diff = diff[mask]
