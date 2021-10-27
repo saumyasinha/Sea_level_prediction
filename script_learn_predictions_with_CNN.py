@@ -34,14 +34,14 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-sub_reg = "cnn_with_1yr_lag_small_fc_changed_validation_wo_batchnorm_dropout"
+sub_reg = "cnn_with_1yr_lag_largefc_changed_validation_wo_batchnorm_all_meteres"
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 
 
-batch_size = 8
+batch_size = 4
 epochs = 200
 
 lr = 1e-4
@@ -61,7 +61,8 @@ def main():
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years)
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
         # np.save(path_data_fr+ model + "/"+"test_for_" + str(test_start_year) + "-" + str(test_end_year) + ".npy", test)
-
+        train[train!=1e+36] = train[train!=1e+36]/100
+        test[test!=1e+36] = test[test!=1e+36]/100 
         X_train, y_train, X_test, y_test = preprocessing.create_labels(train, test, lead_years,n_prev_months)
 
         ## remove land values
@@ -94,8 +95,8 @@ def main():
         y_valid = y[train_valid_split_index:]
 
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
-
-        X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
+        print(np.min(X_train),np.min(y_train),np.min(X_test), np.min(y_test))
+        #X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
         X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
         X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)

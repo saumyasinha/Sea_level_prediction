@@ -56,16 +56,16 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
     basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
 
     # basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved)) #, map_location=torch.device('cpu'))
-    if torch.cuda.is_available():
-        basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved))
-    else:
-        basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
+    #if torch.cuda.is_available():
+      #  basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved))
+    #if not torch.cuda.is_available():
+    basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
 
     basic_forecaster.eval()
     
     if X_test is not None:
-        if torch.cuda.is_available():
-            X_test = X_test.cuda()
+    #    if torch.cuda.is_available():
+     #       X_test = X_test.cuda()
         y_pred = basic_forecaster.forward(X_test)
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
@@ -81,8 +81,8 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
 
     if X_valid is not None:
-        if torch.cuda.is_available():
-            X_valid = X_valid.cuda()
+      #  if torch.cuda.is_available():
+       #     X_valid = X_valid.cuda()
         y_valid_pred = basic_forecaster.forward(X_valid)
         # validLoss = MaskedMSELoss(y_valid_pred, y_valid, valid_mask)
         y_valid_pred = y_valid_pred.cpu().detach().numpy()
