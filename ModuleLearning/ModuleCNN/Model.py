@@ -87,30 +87,30 @@ class FullyConvNet(nn.Module):
             last_channel_size = 1
     #
     #     # smaller FCN
-        self.encoder = nn.Sequential(
-            nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
-           # nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 32,(3,3),stride=2,  padding = 1),#23*12
-           # nn.BatchNorm2d(32),
-            nn.ReLU(),
-          #  nn.Dropout(0.3),
-            nn.Conv2d(32, 64, (3,3), stride =2, padding = 1), #12*6
-         #   nn.BatchNorm2d(64),
-            nn.ReLU())
-           # #nn.Dropout(0.3))
+        #self.encoder = nn.Sequential(
+         #   nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
+          # # nn.BatchNorm2d(16),
+           # nn.ReLU(),
+            #nn.Conv2d(16, 32,(3,3),stride=2,  padding = 1),#23*12
+          # # nn.BatchNorm2d(32),
+          #  nn.ReLU(),
+         # #  nn.Dropout(0.3),
+          #  nn.Conv2d(32, 64, (3,3), stride =2, padding = 1), #12*6
+         # #  nn.BatchNorm2d(64),
+           # nn.ReLU())
+          # # #nn.Dropout(0.3))
 
-        self.decoder = nn.Sequential(
-
-            nn.ConvTranspose2d(64, 32, (3,2), stride = 2, padding = (1,0)), #23*12
-            # nn.BatchNorm2d(32),
-            nn.ReLU(),
-            # nn.Dropout(0.3),
-            nn.ConvTranspose2d(32, 16,(3,3), stride=2, padding = 1), #45*23
-            # nn.BatchNorm2d(16),
-            nn.ReLU(),
-            ##nn.Dropout(0.3),
-            nn.ConvTranspose2d(16, last_channel_size, (2, 3), stride=2, padding = (0,1))) #90*45
+        #self.decoder = nn.Sequential(
+#
+ #           nn.ConvTranspose2d(64, 32, (3,2), stride = 2, padding = (1,0)), #23*12
+  #          # nn.BatchNorm2d(32),
+   #         nn.ReLU(),
+    #        # nn.Dropout(0.3),
+     #       nn.ConvTranspose2d(32, 16,(3,3), stride=2, padding = 1), #45*23
+      #      # nn.BatchNorm2d(16),
+       #     nn.ReLU(),
+        #    ##nn.Dropout(0.3),
+         #   nn.ConvTranspose2d(16, last_channel_size, (2, 3), stride=2, padding = (0,1))) #90*45
 
         # ## SMALL fcn version2
         # self.encoder = nn.Sequential(
@@ -140,27 +140,27 @@ class FullyConvNet(nn.Module):
         # )
         #
 
-        self.apply(weights_init)
+       # self.apply(weights_init)
 
 
 
-    def forward(self, x):
-        x = self.encoder(x)
-      #  # print(x.shape)
-        x = self.decoder(x)
-       # # print(x.shape)
-        x = torch.squeeze(x)
-       # # print(x.shape)
-        return x
+  #  def forward(self, x):
+   #     x = self.encoder(x)
+    #  #  # print(x.shape)
+     #   x = self.decoder(x)
+      # # # print(x.shape)
+       # x = torch.squeeze(x)
+       ## # print(x.shape)
+        #return x
 
 
-    #     self.model = UNet(dim_channels,last_channel_size)
+        self.model = UNet(dim_channels,last_channel_size)
     # #
-    # def forward(self, x):
-    #     x = self.model(x)
-    #     x = torch.squeeze(x)
-    #     print(x.shape)
-    #     return x
+    def forward(self, x):
+        x = self.model(x)
+        x = torch.squeeze(x)
+     #    print(x.shape)
+        return x
     #
 
 

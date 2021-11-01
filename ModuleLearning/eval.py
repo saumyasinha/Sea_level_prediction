@@ -3,7 +3,7 @@ from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-import cartopy.crs as ccrs
+#import cartopy.crs as ccrs
 
 
 def evaluation_metrics(pred, target, mask):
