@@ -142,19 +142,24 @@ def get_image_patches(X,y):
 
 
 
-def normalize_from_train(X_train, X_valid, X_test):
-    # min = np.min(X_train,axis=0)
-    max = np.max(X_train,axis=0)
-    # mean = np.mean(X_train,axis=0)
-    # std = np.std(X_train,axis=0)
+def normalize_from_train(X_train, X_test):
 
-    # print(np.any(std == 0))
-    X_train = X_train/100 #(X_train - mean)/std
-    X_valid = X_valid/100#(X_valid - mean)/std
-    X_test = X_test/100#(X_test - mean) /std
+    n_months = X_train.shape[2]
+
+    for month in range(12):
+        indices_month = [i for i in range(n_months) if i%12==month]
+        X_sub = X_train[:, :, indices_month]
+        print(X_sub.shape)
+        avg_for_month = np.mean(X_sub, axis=2)
+        avg_for_month[avg_for_month > 1e+36] = 1e+36
+        print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
+        X_train[:,:,indices_month] = X_train[:,:,indices_month]  - avg_for_month[:,:,np.newaxis]
+
+        n_months_test = X_test.shape[2]
+        indices_month_test = [i for i in range(n_months_test) if i%12==month]
+        print(X_test[:, :, indices_month_test].shape)
+        X_test[:, :, indices_month_test] = X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis]
 
 
-    print(np.min(X_train), np.max(X_train))
-
-    return X_train, X_valid, X_test
+    return X_train,X_test
 

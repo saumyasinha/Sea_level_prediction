@@ -3,7 +3,8 @@ from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-import cartopy.crs as ccrs
+# import cartopy.crs as ccrs
+from matplotlib.colors import TwoSlopeNorm, Normalize
 
 
 def evaluation_metrics(pred, target, mask):
@@ -100,7 +101,7 @@ def plot(xr, folder_saving, save_file, trend =False):
     #     print(var)
     #
     if trend==False:
-        zos_gt = dataset.variables['SSH'][-12,:, :]/100 #-12 for jan2014 71 for DEC2020
+        zos_gt = np.mean(dataset.variables['SSH'][-12,:, :]/100, axis=0) #-12 for jan2014 71 for DEC2020
         print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
         zos = np.transpose(xr)
         # zos = xr
@@ -122,9 +123,10 @@ def plot(xr, folder_saving, save_file, trend =False):
     lons = dataset.variables['lon'][:]
     print(lons.min(), lons.max())
 
-    ax = plt.axes(projection=ccrs.PlateCarree())
-
-    plt.contourf(lons,lats, zos, 60, cmap="jet",
+    zos = zos*1000
+    ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=180))
+    norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
+    plt.contourf(lons,lats, zos, 60, norm = norm,  cmap="jet",
                  transform=ccrs.PlateCarree())
 
     ax.coastlines()

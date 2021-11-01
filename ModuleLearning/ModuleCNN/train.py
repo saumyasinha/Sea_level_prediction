@@ -71,11 +71,11 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         y_pred = y_pred.cpu().detach().numpy()
         print(y_pred.shape)
 
-        y_test_wo_patches = eval.combine_image_patches(y_test)
-        y_pred_wo_patches = eval.combine_image_patches(y_pred)
-        np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
-        y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
-        test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask)
+        # y_test_wo_patches = eval.combine_image_patches(y_test)
+        # y_pred_wo_patches = eval.combine_image_patches(y_pred)
+        np.save(folder_saving + "/" + "test_predictions.npy", y_pred)
+        y_test, test_mask = get_target_mask(y_test)
+        test_rmse, test_mae = eval.evaluation_metrics(y_pred, y_test, test_mask)
 
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
@@ -88,11 +88,11 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         y_valid_pred = y_valid_pred.cpu().detach().numpy()
         print(y_valid_pred.shape)
 
-        y_valid_wo_patches = eval.combine_image_patches(y_valid)
-        y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
-        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
-        y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
-        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
+        # y_valid_wo_patches = eval.combine_image_patches(y_valid)
+        # y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
+        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred)
+        y_valid, valid_mask = get_target_mask(y_valid)
+        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred, y_valid, valid_mask)
 
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 

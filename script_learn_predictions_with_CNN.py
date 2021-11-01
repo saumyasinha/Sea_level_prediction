@@ -23,7 +23,7 @@ path_folder = path_sealevel_folder
 historical_path = path_folder + "1850-2014/npy_files/"
 future_path = path_folder + "2015-2100/npy_files/"
 
-train_start_year = 1900
+train_start_year = 1870 #1900
 train_end_year = 1990
 test_start_year = 1991
 test_end_year = 2020
@@ -35,14 +35,14 @@ q50 = 9
 reg = "CNN"
 
 
-sub_reg = "cnn_with_1yr_lag_unet_changed_validation_wo_batchnorm_dropout_yearly_data"
-# sub_reg = "cnn_with_1yr_lag_smallfc_MAE_changed_validation_wo_batchnorm_all_meteres"
+sub_reg = "cnn_with_1yr_lag_unet_monthly_updated_data"
+# sub_reg = "cnn_with_1yr_lag_unet_changed_validation_wo_batchnorm_dropout_all_meteres"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12 #12
-yearly = True
+yearly = False
 
 
 batch_size = 8
@@ -73,22 +73,24 @@ def main():
         X_train = preprocessing.remove_land_values(X_train)
         X_test = preprocessing.remove_land_values(X_test)
 
+        ## splitting train into train+valid later
+        split_index = 30 if yearly else 120*3
+
         ##if working with years instead of months
         if yearly:
-            n_prev_yrs = int(n_prev_months/12)
+            n_prev_times = int(n_prev_months/12)
             X_train, y_train, X_test, y_test = preprocessing.convert_month_to_years(X_train),preprocessing.convert_month_to_years(y_train),preprocessing.convert_month_to_years(X_test),preprocessing.convert_month_to_years(y_test)
         else:
-            n_prev_yrs = n_prev_months
+            n_prev_times = n_prev_months
+            X_train, X_test = preprocessing.normalize_from_train(X_train, X_test)
 
         ## add previous timestep values
-        X_train = preprocessing.include_prev_timesteps(X_train, n_prev_yrs)
-        X_test = preprocessing.include_prev_timesteps(X_test, n_prev_yrs)
+        X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
+        X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times)
 
-        y_train = y_train[:,:,n_prev_yrs:]
-        y_test = y_test[:,:,n_prev_yrs:]
+        y_train = y_train[:,:,n_prev_times:]
+        y_test = y_test[:,:,n_prev_times:]
 
-        lon = y_train.shape[0]
-        lat = y_train.shape[1]
         y_train = np.transpose(y_train, (2,0,1)) #y_train.reshape(-1,lon,lat)
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)
 
@@ -99,7 +101,6 @@ def main():
         #     X_train, y_train, test_size=0.2, random_state=42)
 
 
-        split_index = 20 if yearly else 120
         train_valid_split_index = len(X_train) - split_index #2*120 #keeping later 10 years for validation
         X,y = X_train,y_train
         X_train = X[:train_valid_split_index]
@@ -110,39 +111,42 @@ def main():
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
         print(np.min(X_train),np.min(y_train),np.min(X_test), np.min(y_test))
-        #X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
+        # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
-        X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
-        X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)
-        X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
+        # X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
+        # X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)
+        # X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
 
-        y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
-        train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, n_features,  n_prev_yrs+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_yrs+1, folder_saving, model_saved, quantile, alphas)
+        # y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
+        y_valid_copy = y_valid.copy()
+        train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid, y_valid_copy, X_test, y_test, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
         #
-        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
-        # print(y_valid_pred.shape)
-        # #
+        y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
+        print(y_valid_pred.shape)
+        #
         # yr_JAN2014 = y_valid[-7*12]
         # yr_JAN2014_pred =y_valid_pred[-7*12]
         # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
         # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
-        # # #
-        # # # yr_DEC2020 = y_valid[-1]
-        # # # yr_DEC2020_pred =y_valid_pred[-1]
-        # # # eval.plot(yr_DEC2020,folder_saving, "model_DEC2020_sla")
-        # # # eval.plot(yr_DEC2020_pred, folder_saving,"predicted_DEC2020_sla")
         # #
-        # trend = eval.fit_trend(y_valid_pred, valid_mask, yearly = yearly)
-        # eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
-        # # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        # trend = eval.fit_trend(y_valid, valid_mask, yearly = yearly)
-        # eval.plot(trend, folder_saving, "model_trend_2001-2020", trend=True)
+        trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
+        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        eval.plot(trend, folder_saving, "model_trend_2001-2020", trend=True)
+
+        # yr_2014 = y_valid[-1]
+        # yr_2014_pred = y_valid_pred[-1]
+        # eval.plot(yr_2014, folder_saving, "model_2014_sla")
+        # eval.plot(yr_2014_pred, folder_saving, "predicted_2014_sla")
+        #
+
 
 
 
