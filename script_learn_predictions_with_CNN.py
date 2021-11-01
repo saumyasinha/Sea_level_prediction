@@ -8,7 +8,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
@@ -127,19 +127,19 @@ def main():
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
         #
-        y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
-        print(y_valid_pred.shape)
+        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
+        # print(y_valid_pred.shape)
         #
         # yr_JAN2014 = y_valid[-7*12]
         # yr_JAN2014_pred =y_valid_pred[-7*12]
         # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
         # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
         # #
-        trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
-        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        eval.plot(trend, folder_saving, "model_trend_2001-2020", trend=True)
+        # trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        # eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
+        # # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        # trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        # eval.plot(trend, folder_saving, "model_trend_2001-2020", trend=True)
 
         # yr_2014 = y_valid[-1]
         # yr_2014_pred = y_valid_pred[-1]

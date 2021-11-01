@@ -85,7 +85,7 @@ class FullyConvNet(nn.Module):
             last_channel_size = outputs
         else:
             last_channel_size = 1
-    #
+
     # #     # smaller FCN
     #     self.encoder = nn.Sequential(
     #         nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
@@ -161,7 +161,6 @@ class FullyConvNet(nn.Module):
         x = torch.squeeze(x)
         # print(x.shape)
         return x
-
 
 
 def trainBatchwise(trainX, trainY, validX,
