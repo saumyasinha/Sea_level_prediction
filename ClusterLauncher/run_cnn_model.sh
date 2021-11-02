@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # === 2. List of SBATCH arguements ===
-#SBATCH --job-name=cesm_unet_yearly_patches_batchnorm_changed_Validation_correct
-#SBATCH --nodelist=bgpu-casa1
+#SBATCH --job-name=cesm_unet_monthly_wihtout_patches_changed_data
+#SBATCH --nodelist=bgpu-dhl1
 #SBATCH --account=blanca-kann
-#SBATCH --gres=gpu
+#SBATCH --gres=gpu:2
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
 #SBATCH --ntasks=12
-#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/cesm_correct_unet_yearly_patches_batchnorm_changed_Validation.%j.out
+#SBATCH --output=/pl/active/machinelearning/ML_for_sea_level/job_outputs/cesm_unet_monthly_wihtout_patches_changed_data.%j.out
 
 # === 3. Purge and load needed modules ===
 module purge
