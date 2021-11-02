@@ -173,11 +173,11 @@ def trainBatchwise(trainX, trainY, validX,
 
     parallel = False
     if train_on_gpu:
-      #  if torch.cuda.device_count() > 1:
+        if torch.cuda.device_count() > 1:
            # print("Let's use", torch.cuda.device_count(), "GPUs!")
 
-    #        basic_forecaster = nn.DataParallel(basic_forecaster)
-     #       parallel = True
+            basic_forecaster = nn.DataParallel(basic_forecaster)
+            parallel = True
 
 
         basic_forecaster = basic_forecaster.cuda()

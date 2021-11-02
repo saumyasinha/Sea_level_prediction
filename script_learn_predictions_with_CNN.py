@@ -45,7 +45,7 @@ n_prev_months = 12 #12
 yearly = False
 
 
-batch_size = 8
+batch_size = 4
 epochs = 200
 lr = 1e-4
 
