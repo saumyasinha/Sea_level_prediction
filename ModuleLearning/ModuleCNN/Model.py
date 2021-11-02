@@ -88,68 +88,68 @@ class FullyConvNet(nn.Module):
 
     # #     # smaller FCN
     #     self.encoder = nn.Sequential(
-    #         nn.Conv2d(dim_channels, 16, (3,3), stride=2, padding = 1),  #45*23
+    #         nn.Conv2d(dim_channels, 16, (3,3), stride=(2,2), padding = (1,1)),  #45*23
     #        # nn.BatchNorm2d(16),
     #         nn.ReLU(),
-    #         nn.Conv2d(16, 32,(3,3),stride=2,  padding = 1),#23*12
+    #         nn.Conv2d(16, 32,(3,3),stride=(2,2),  padding = (1,1)),#23*12
     #        # nn.BatchNorm2d(32),
     #         nn.ReLU(),
     #       #  nn.Dropout(0.3),
-    #         nn.Conv2d(32, 64, (3,3), stride =2, padding = 1), #12*6
+    #         nn.Conv2d(32, 64, (3,3), stride =(2,2), padding = (1,1)), #12*6
     #      #   nn.BatchNorm2d(64),
     #         nn.ReLU())
     #        # #nn.Dropout(0.3))
     #
     #     self.decoder = nn.Sequential(
     #
-    #         nn.ConvTranspose2d(64, 32, (3,2), stride = 2, padding = (1,0)), #23*12
+    #         nn.ConvTranspose2d(64, 32, (3,3), stride = (2,2), padding = (0,1)), #23*12
     #         # nn.BatchNorm2d(32),
     #         nn.ReLU(),
     #         # nn.Dropout(0.3),
-    #         nn.ConvTranspose2d(32, 16,(3,3), stride=2, padding = 1), #45*23
+    #         nn.ConvTranspose2d(32, 16,(3,3), stride=(2,2), padding = (1,1)), #45*23
     #         # nn.BatchNorm2d(16),
     #         nn.ReLU(),
     #         ##nn.Dropout(0.3),
-    #         nn.ConvTranspose2d(16, last_channel_size, (2, 3), stride=2, padding = (0,1))) #90*45
-    #
-    #     # ## SMALL fcn version2
-    #     # self.encoder = nn.Sequential(
-    #     #     nn.Conv2d(dim_channels, 32, (3, 3), stride=2, padding=1),  # 45*23
-    #     #     nn.BatchNorm2d(32),
-    #     #     nn.ReLU(),
-    #     #     nn.Conv2d(32, 64, (3, 3), stride=2, padding=1),  # 23*12
-    #     #     nn.BatchNorm2d(64),
-    #     #     nn.ReLU(),
-    #     #     nn.Conv2d(64, 128, (3, 3), stride=2, padding=1),  # 12*6
-    #     #     nn.BatchNorm2d(128),
-    #     #     nn.ReLU(),
-    #     #     nn.Dropout(0.3)
-    #     # )
-    #     #
-    #     # self.decoder = nn.Sequential(
-    #     #     nn.ConvTranspose2d(128, 64, (3,2), stride = 2, padding = (1,0)), #23*12
-    #     #     nn.BatchNorm2d(64),
-    #     #     nn.ReLU(),
-    #     #     nn.Dropout(0.3),
-    #     #     nn.ConvTranspose2d(64, 32,(3,3), stride=2, padding = 1), #45*23
-    #     #     nn.BatchNorm2d(32),
-    #     #     nn.ReLU(),
-    #     #     nn.ConvTranspose2d(32, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
-    #     #
-    #     #     # nn.Sigmoid(),
-    #     # )
-    #     #
-    #
-    #     self.apply(weights_init)
-    #
-    #
-    #
+    #         nn.ConvTranspose2d(16, last_channel_size, (2, 4), stride=(2,2), padding = (1,0))) #90*45
+    # #
+    # #     # ## SMALL fcn version2
+    # #     # self.encoder = nn.Sequential(
+    # #     #     nn.Conv2d(dim_channels, 32, (3, 3), stride=2, padding=1),  # 45*23
+    # #     #     nn.BatchNorm2d(32),
+    # #     #     nn.ReLU(),
+    # #     #     nn.Conv2d(32, 64, (3, 3), stride=2, padding=1),  # 23*12
+    # #     #     nn.BatchNorm2d(64),
+    # #     #     nn.ReLU(),
+    # #     #     nn.Conv2d(64, 128, (3, 3), stride=2, padding=1),  # 12*6
+    # #     #     nn.BatchNorm2d(128),
+    # #     #     nn.ReLU(),
+    # #     #     nn.Dropout(0.3)
+    # #     # )
+    # #     #
+    # #     # self.decoder = nn.Sequential(
+    # #     #     nn.ConvTranspose2d(128, 64, (3,2), stride = 2, padding = (1,0)), #23*12
+    # #     #     nn.BatchNorm2d(64),
+    # #     #     nn.ReLU(),
+    # #     #     nn.Dropout(0.3),
+    # #     #     nn.ConvTranspose2d(64, 32,(3,3), stride=2, padding = 1), #45*23
+    # #     #     nn.BatchNorm2d(32),
+    # #     #     nn.ReLU(),
+    # #     #     nn.ConvTranspose2d(32, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
+    # #     #
+    # #     #     # nn.Sigmoid(),
+    # #     # )
+    # #     #
+    # #
+    # #     self.apply(weights_init)
+    # #
+    # #
+    # #
     # def forward(self, x):
     #     x = self.encoder(x)
-    #   #  # print(x.shape)
+    #     # print(x.shape)
     #     x = self.decoder(x)
-    #    # # print(x.shape)
-    #     x = torch.squeeze(x)
+    #     print(x.shape)
+    #     # x = torch.squeeze(x)
     #    # # print(x.shape)
     #     return x
 
@@ -173,11 +173,11 @@ def trainBatchwise(trainX, trainY, validX,
 
     parallel = False
     if train_on_gpu:
-      #  if torch.cuda.device_count() > 1:
+        if torch.cuda.device_count() > 1:
            # print("Let's use", torch.cuda.device_count(), "GPUs!")
 
-    #        basic_forecaster = nn.DataParallel(basic_forecaster)
-     #       parallel = True
+           basic_forecaster = nn.DataParallel(basic_forecaster)
+           parallel = True
 
 
         basic_forecaster = basic_forecaster.cuda()
@@ -185,7 +185,7 @@ def trainBatchwise(trainX, trainY, validX,
 
     print(basic_forecaster)
 
-    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08) #, weight_decay = 1e-5)
+    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
     # scheduler = StepLR(optimizer, step_size=25, gamma=0.1)
     # criterion = torch.nn.MSELoss()
     # criterion = nn.L1Loss()

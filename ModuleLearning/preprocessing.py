@@ -4,8 +4,9 @@ import numpy as np
 def remove_land_values(xr):
 
     missing_val = 1e+36
-    print(np.max(xr), np.min(xr))
-    xr[xr == missing_val] = 0
+    print(np.nanmax(xr), np.nanmin(xr))
+    # xr[xr == missing_val] = 0
+    xr[np.isnan(xr)] = 0
     print(np.max(xr),np.min(xr))
     return xr
 
@@ -85,7 +86,11 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     test = full_array[:, :, test_start_index-n_prev_months: test_end_index]
     print(test_start_index, test_end_index, test.shape)
 
-    print(np.min(train), np.max(train), np.min(test), np.max(test), np.isnan(train).sum(), np.isnan(test).sum())
+    ##masking land values with np.nan
+    train[train == 1e+36] = np.nan
+    test[test == 1e+36] = np.nan
+
+    print(np.nanmin(train), np.nanmax(train), np.nanmin(test), np.nanmax(test), np.isnan(train).sum(), np.isnan(test).sum())
     return train, test
 
 def convert_month_to_years(X):
@@ -97,7 +102,7 @@ def convert_month_to_years(X):
     for yr in range(0, n_years):
         X_sub = X[:,:,i:i + 12]
         annual_X = np.mean(X_sub, axis=2)
-        annual_X[annual_X>1e+36]=1e+36
+        # annual_X[annual_X>1e+36]=1e+36
         # print(annual_X.shape)
         X_yrs.append(annual_X)
         i = i + 12
@@ -151,9 +156,8 @@ def normalize_from_train(X_train, X_test):
         X_sub = X_train[:, :, indices_month]
         print(X_sub.shape)
         avg_for_month = np.mean(X_sub, axis=2)
-        avg_for_month[avg_for_month > 1e+36] = 1e+36
         print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
-        X_train[:,:,indices_month] = X_train[:,:,indices_month]  - avg_for_month[:,:,np.newaxis]
+        X_train[:,:,indices_month] = X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis]
 
         n_months_test = X_test.shape[2]
         indices_month_test = [i for i in range(n_months_test) if i%12==month]

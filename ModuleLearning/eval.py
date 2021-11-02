@@ -24,7 +24,7 @@ def fit_trend(pred, mask, yearly = False):
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    x = list(range(2001,2021))
+    x = list(range(1991,2021))
     n_years = int(pred.shape[0] / 12)
     if yearly:
         n_years = pred.shape[0]

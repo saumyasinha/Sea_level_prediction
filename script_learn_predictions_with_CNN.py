@@ -45,7 +45,7 @@ n_prev_months = 12 #12
 yearly = False
 
 
-batch_size = 8
+batch_size = 4
 epochs = 200
 lr = 1e-4
 
@@ -64,17 +64,10 @@ def main():
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
         # np.save(path_data_fr+ model + "/"+"test_for_" + str(test_start_year) + "-" + str(test_end_year) + ".npy", test)
 
-        train[train != 1e+36] = train[train != 1e+36] / 100
-        test[test != 1e+36] = test[test != 1e+36] / 100
+        train = train / 100
+        test = test / 100
 
         X_train, y_train, X_test, y_test = preprocessing.create_labels(train, test, lead_years,n_prev_months)
-
-        ## remove land values
-        X_train = preprocessing.remove_land_values(X_train)
-        X_test = preprocessing.remove_land_values(X_test)
-
-        ## splitting train into train+valid later
-        split_index = 30 if yearly else 120*3
 
         ##if working with years instead of months
         if yearly:
@@ -83,6 +76,10 @@ def main():
         else:
             n_prev_times = n_prev_months
             X_train, X_test = preprocessing.normalize_from_train(X_train, X_test)
+
+        ## remove land values
+        X_train = preprocessing.remove_land_values(X_train)
+        X_test = preprocessing.remove_land_values(X_test)
 
         ## add previous timestep values
         X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
@@ -100,6 +97,8 @@ def main():
         # X_train, X_valid, y_train, y_valid = train_test_split(
         #     X_train, y_train, test_size=0.2, random_state=42)
 
+        ## splitting train into train+valid
+        split_index = 30 if yearly else 120 * 3
 
         train_valid_split_index = len(X_train) - split_index #2*120 #keeping later 10 years for validation
         X,y = X_train,y_train
@@ -110,7 +109,6 @@ def main():
 
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
-        print(np.min(X_train),np.min(y_train),np.min(X_test), np.min(y_test))
         # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
         # X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
@@ -129,17 +127,17 @@ def main():
         #
         # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
         # print(y_valid_pred.shape)
-        #
-        # yr_JAN2014 = y_valid[-7*12]
-        # yr_JAN2014_pred =y_valid_pred[-7*12]
-        # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
-        # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
         # #
+        # # yr_JAN2014 = y_valid[-7*12]
+        # # yr_JAN2014_pred =y_valid_pred[-7*12]
+        # # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla")
+        # # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla")
+        # # #
         # trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # eval.plot(trend, folder_saving, "valid_trend_2001-2020", trend=True)
+        # eval.plot(trend, folder_saving, "valid_trend_1991-2020", trend=True)
         # # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
         # trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # eval.plot(trend, folder_saving, "model_trend_2001-2020", trend=True)
+        # eval.plot(trend, folder_saving, "model_trend_1991-2020", trend=True)
 
         # yr_2014 = y_valid[-1]
         # yr_2014_pred = y_valid_pred[-1]

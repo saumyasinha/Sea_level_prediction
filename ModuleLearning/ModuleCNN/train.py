@@ -11,24 +11,24 @@ from ModuleLearning import eval
 def get_target_mask(y):
     # print(y[:5,0,0])
     missing_val = 1e+36
-    mask = (y != missing_val)
+    mask = ~np.isnan(y)#(y != missing_val)
     print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
-    # y[y == missing_val] = 0
+    y[np.isnan(y)] = 0
     return y, mask
 
 def basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, n_predictions =1):
     valid = True
     outputs_quantile = len(alphas)
 
-    X_train, y_train = torch.from_numpy(X_train), torch.from_numpy(y_train)
-    X_valid, y_valid = torch.from_numpy(X_valid), torch.from_numpy(y_valid)
+    y_train, train_mask = get_target_mask(y_train)
+    y_valid, valid_mask = get_target_mask(y_valid)
+
+    X_train, y_train, train_mask = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask)
+    X_valid, y_valid, valid_mask = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask)
 
     X_train = X_train.permute(0,3, 1, 2)
     X_valid = X_valid.permute(0,3, 1, 2)
-
-    y_train, train_mask = get_target_mask(y_train)
-    y_valid, valid_mask = get_target_mask(y_valid)
 
     train_loss, valid_loss = trainBatchwise(X_train, y_train, X_valid, y_valid, train_mask, valid_mask,
                                             n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
