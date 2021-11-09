@@ -166,6 +166,7 @@ def normalize_from_train(X_train, X_test,y_train, y_test, split_index):
         X_train[:,:,indices_month] = X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis]
         y_train[:, :, indices_month] = y_train[:, :, indices_month] - avg_for_month[:, :, np.newaxis]
 
+
         indices_month_test = [i for i in range(n_months_test) if i%12==month]
         X_test[:, :, indices_month_test] = X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis]
         y_test[:, :, indices_month_test] = y_test[:, :, indices_month_test] - avg_for_month[:, :, np.newaxis]

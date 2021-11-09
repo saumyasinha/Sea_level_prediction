@@ -85,6 +85,7 @@ class FullyConvNet(nn.Module):
         else:
             last_channel_size = 1
 
+
     # #     # smaller FCN
     # #     self.encoder = nn.Sequential(
     # #         nn.Conv2d(dim_channels, 16, (3,3), stride=(2,2), padding = (1,1)),  #45*23
@@ -149,16 +150,16 @@ class FullyConvNet(nn.Module):
     #     x = self.decoder(x)
     #     # print(x.shape)
     #     x = torch.squeeze(x)
-    #    # # print(x.shape)
-    #     return x
+
+
 
 
         self.model = UNet(dim_channels,last_channel_size)
-    #
+   # #
     def forward(self, x):
         x = self.model(x)
         x = torch.squeeze(x)
-        # print(x.shape)
+      #  # print(x.shape)
         return x
 
 
@@ -266,7 +267,6 @@ def trainBatchwise(trainX, trainY, validX,
                 torch.save(basic_forecaster.module.state_dict(), saving_path)
             else:
                 torch.save(basic_forecaster.state_dict(), saving_path)
-
     return losses, valid_losses
 
 
@@ -316,6 +316,7 @@ def MaskedBerhuLoss(pred, target, mask):
     return loss
 
 
+
 def MaskedHuberLoss(pred, target, mask):
     diff = target - pred
     diff = diff[mask]
@@ -324,3 +325,4 @@ def MaskedHuberLoss(pred, target, mask):
 
     loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
     return loss
+
