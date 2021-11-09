@@ -156,13 +156,14 @@ def normalize_from_train(X_train, X_test):
         X_sub = X_train[:, :, indices_month]
         print(X_sub.shape)
         avg_for_month = np.mean(X_sub, axis=2)
+        std_for_month = np.std(X_sub, axis=2)
         print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
-        X_train[:,:,indices_month] = X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis]
+        X_train[:,:,indices_month] = (X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis])/std_for_month[:,:,np.newaxis]
 
         n_months_test = X_test.shape[2]
         indices_month_test = [i for i in range(n_months_test) if i%12==month]
         print(X_test[:, :, indices_month_test].shape)
-        X_test[:, :, indices_month_test] = X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis]
+        X_test[:, :, indices_month_test] = (X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis])/std_for_month[:,:,np.newaxis]
 
 
     return X_train,X_test

@@ -35,7 +35,7 @@ q50 = 9
 reg = "CNN"
 
 
-sub_reg = "cnn_with_1yr_lag_unet_monthly_updated_data"
+sub_reg = "cnn_with_1yr_lag_unet_monthly_updated_data_wo_patches"
 # sub_reg = "cnn_with_1yr_lag_unet_changed_validation_wo_batchnorm_dropout_all_meteres"
 
 ## Hyperparameters
@@ -46,7 +46,7 @@ yearly = False
 
 
 batch_size = 4
-epochs = 200
+epochs = 300
 lr = 1e-4
 
 
@@ -111,16 +111,16 @@ def main():
 
         # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
-        # X_train_w_patches,y_train_w_patches = preprocessing.get_image_patches(X_train,y_train)
-        # X_valid_w_patches, y_valid_w_patches = preprocessing.get_image_patches(X_valid, y_valid)
-        # X_test_w_patches, y_test_w_patches = preprocessing.get_image_patches(X_test, y_test)
+        X_train_w_patches,y_train_w_patches = X_train,y_train #preprocessing.get_image_patches(X_train,y_train)
+        X_valid_w_patches, y_valid_w_patches = X_valid, y_valid #preprocessing.get_image_patches(X_valid, y_valid)
+        X_test_w_patches, y_test_w_patches = X_test, y_test #preprocessing.get_image_patches(X_test, y_test)
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
 
-        # y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
-        y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid, y_valid_copy, X_test, y_test, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas)
+        y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
+        #y_valid_copy = y_valid.copy()
+        train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
