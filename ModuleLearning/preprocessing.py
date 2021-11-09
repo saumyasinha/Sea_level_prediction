@@ -147,23 +147,29 @@ def get_image_patches(X,y):
 
 
 
-def normalize_from_train(X_train, X_test):
+def normalize_from_train(X_train, X_test,y_train, y_test, split_index):
 
-    n_months = X_train.shape[2]
+    X_pure_train = X_train[:,:,:-split_index]
+    n_months = X_pure_train.shape[2]
+
+    n_months_test = X_test.shape[2]
+
+    print(np.nanmin(y_test),np.nanmin(y_train), np.nanmin(X_test), np.nanmin(X_train))
 
     for month in range(12):
         indices_month = [i for i in range(n_months) if i%12==month]
-        X_sub = X_train[:, :, indices_month]
-        print(X_sub.shape)
+        X_sub = X_pure_train[:, :, indices_month]
+        # print(X_sub.shape)
         avg_for_month = np.mean(X_sub, axis=2)
-        print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
+        # std_for_month = np.std(X_sub, axis=2)
+        # print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
         X_train[:,:,indices_month] = X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis]
+        y_train[:, :, indices_month] = y_train[:, :, indices_month] - avg_for_month[:, :, np.newaxis]
 
-        n_months_test = X_test.shape[2]
         indices_month_test = [i for i in range(n_months_test) if i%12==month]
-        print(X_test[:, :, indices_month_test].shape)
         X_test[:, :, indices_month_test] = X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis]
+        y_test[:, :, indices_month_test] = y_test[:, :, indices_month_test] - avg_for_month[:, :, np.newaxis]
 
 
-    return X_train,X_test
+    return X_train, X_test, y_train, y_test
 

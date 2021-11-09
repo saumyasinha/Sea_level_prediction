@@ -3,7 +3,7 @@ from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-# import cartopy.crs as ccrs
+import cartopy.crs as ccrs
 from matplotlib.colors import TwoSlopeNorm, Normalize
 
 
@@ -25,7 +25,11 @@ def fit_trend(pred, mask, yearly = False):
     lat = pred.shape[2]
     missing_val = 1e+36
     x = list(range(1991,2021))
+    mid_x = np.mean(x)
+    x = np.asarray([i-mid_x for i in x])
+
     n_years = int(pred.shape[0] / 12)
+
     if yearly:
         n_years = pred.shape[0]
 
@@ -46,8 +50,9 @@ def fit_trend(pred, mask, yearly = False):
     print(y.shape)
 
     # plot_global_mean_sea_level(x, y)
-
-    fitted_coeff = np.full((lon,lat),missing_val)
+    # done = False
+    # count=0
+    fitted_coeff = np.full((lon,lat),np.nan)
     for i in range(lon):
         for j in range(lat):
             y_i_j = y[:,i,j]
@@ -56,6 +61,20 @@ def fit_trend(pred, mask, yearly = False):
 
             if np.all(mask_i_j==True):
                 fitted_all_coeffs = poly.polyfit(x, y_i_j,1)
+                # if done == False:
+                #     coeff = fitted_all_coeffs[1]
+                #     intercept = fitted_all_coeffs[0]
+                #     fit_eq = coeff * x + intercept
+                #     fig = plt.figure()
+                #     ax = fig.subplots()
+                #     ax.plot(x, fit_eq, color='r', alpha=0.5, label='Linear fit')
+                #     ax.plot(x, y_i_j, color='b', label='time series')  # Original data points
+                #     ax.set_title('Linear fit at single point')
+                #     ax.legend()
+                #     count=count+1
+                #     plt.savefig("single_point_test_"+str(count))
+                #     if count==5:
+                #         done=True
                 # print(fitted_all_coeffs)
                 fitted_coeff[i,j] = fitted_all_coeffs[1]
 
@@ -75,7 +94,7 @@ def fit_trend(pred, mask, yearly = False):
 
 
 
-def plot(xr, folder_saving, save_file, trend =False):
+def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     # sla_masked = np.ma.masked_where(~mask, xr)
     # sla_masked = np.transpose(sla_masked)
@@ -101,7 +120,7 @@ def plot(xr, folder_saving, save_file, trend =False):
     #     print(var)
     #
     if trend==False:
-        zos_gt = np.mean(dataset.variables['SSH'][-12,:, :]/100, axis=0) #-12 for jan2014 71 for DEC2020
+        zos_gt = dataset.variables['SSH'][index,:, :]/100
         print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
         zos = np.transpose(xr)
         # zos = xr
@@ -115,7 +134,8 @@ def plot(xr, folder_saving, save_file, trend =False):
     else:
         zos = np.transpose(xr)
         print(np.min(zos), np.max(zos), zos.shape)
-        zos = np.ma.masked_where(zos==1e+36, zos)
+        # zos = np.ma.masked_where(zos==1e+36, zos)
+        zos = np.ma.masked_where(np.isnan(zos), zos)
         print(np.min(zos), np.max(zos), zos.shape)
 
     lats = dataset.variables['lat'][:]
@@ -123,8 +143,7 @@ def plot(xr, folder_saving, save_file, trend =False):
     lons = dataset.variables['lon'][:]
     print(lons.min(), lons.max())
 
-    zos = zos*1000
-    ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=180))
+    ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))
     norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
     plt.contourf(lons,lats, zos, 60, norm = norm,  cmap="jet",
                  transform=ccrs.PlateCarree())

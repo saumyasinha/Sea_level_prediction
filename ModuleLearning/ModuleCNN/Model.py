@@ -7,7 +7,6 @@ import numpy as np
 from ModuleLearning.ModuleCNN.unet import UNet
 
 
-
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(self, saving_path, patience=7, verbose=False, delta=0):
@@ -87,60 +86,60 @@ class FullyConvNet(nn.Module):
             last_channel_size = 1
 
     # #     # smaller FCN
+    # #     self.encoder = nn.Sequential(
+    # #         nn.Conv2d(dim_channels, 16, (3,3), stride=(2,2), padding = (1,1)),  #45*23
+    # #        # nn.BatchNorm2d(16),
+    # #         nn.ReLU(),
+    # #         nn.Conv2d(16, 32,(3,3),stride=(2,2),  padding = (1,1)),#23*12
+    # #        # nn.BatchNorm2d(32),
+    # #         nn.ReLU(),
+    # #       #  nn.Dropout(0.3),
+    # #         nn.Conv2d(32, 64, (3,3), stride =(2,2), padding = (1,1)), #12*6
+    # #      #   nn.BatchNorm2d(64),
+    # #         nn.ReLU())
+    # #        # #nn.Dropout(0.3))
+    # #
+    # #     self.decoder = nn.Sequential(
+    # #
+    # #         nn.ConvTranspose2d(64, 32, (3,3), stride = (2,2), padding = (0,1)), #23*12
+    # #         # nn.BatchNorm2d(32),
+    # #         nn.ReLU(),
+    # #         # nn.Dropout(0.3),
+    # #         nn.ConvTranspose2d(32, 16,(3,3), stride=(2,2), padding = (1,1)), #45*23
+    # #         # nn.BatchNorm2d(16),
+    # #         nn.ReLU(),
+    # #         ##nn.Dropout(0.3),
+    # #         nn.ConvTranspose2d(16, last_channel_size, (2, 4), stride=(2,2), padding = (1,0))) #90*45
+    #
+    #     ## SMALL fcn version2
     #     self.encoder = nn.Sequential(
-    #         nn.Conv2d(dim_channels, 16, (3,3), stride=(2,2), padding = (1,1)),  #45*23
-    #        # nn.BatchNorm2d(16),
-    #         nn.ReLU(),
-    #         nn.Conv2d(16, 32,(3,3),stride=(2,2),  padding = (1,1)),#23*12
-    #        # nn.BatchNorm2d(32),
-    #         nn.ReLU(),
-    #       #  nn.Dropout(0.3),
-    #         nn.Conv2d(32, 64, (3,3), stride =(2,2), padding = (1,1)), #12*6
-    #      #   nn.BatchNorm2d(64),
-    #         nn.ReLU())
-    #        # #nn.Dropout(0.3))
-    #
-    #     self.decoder = nn.Sequential(
-    #
-    #         nn.ConvTranspose2d(64, 32, (3,3), stride = (2,2), padding = (0,1)), #23*12
+    #         nn.Conv2d(dim_channels, 32, (3, 3), stride=2, padding=1),  # 45*23
     #         # nn.BatchNorm2d(32),
     #         nn.ReLU(),
-    #         # nn.Dropout(0.3),
-    #         nn.ConvTranspose2d(32, 16,(3,3), stride=(2,2), padding = (1,1)), #45*23
-    #         # nn.BatchNorm2d(16),
+    #         nn.Conv2d(32, 64, (3, 3), stride=2, padding=1),  # 23*12
+    #         # nn.BatchNorm2d(64),
     #         nn.ReLU(),
-    #         ##nn.Dropout(0.3),
-    #         nn.ConvTranspose2d(16, last_channel_size, (2, 4), stride=(2,2), padding = (1,0))) #90*45
-    # #
-    # #     # ## SMALL fcn version2
-    # #     # self.encoder = nn.Sequential(
-    # #     #     nn.Conv2d(dim_channels, 32, (3, 3), stride=2, padding=1),  # 45*23
-    # #     #     nn.BatchNorm2d(32),
-    # #     #     nn.ReLU(),
-    # #     #     nn.Conv2d(32, 64, (3, 3), stride=2, padding=1),  # 23*12
-    # #     #     nn.BatchNorm2d(64),
-    # #     #     nn.ReLU(),
-    # #     #     nn.Conv2d(64, 128, (3, 3), stride=2, padding=1),  # 12*6
-    # #     #     nn.BatchNorm2d(128),
-    # #     #     nn.ReLU(),
-    # #     #     nn.Dropout(0.3)
-    # #     # )
-    # #     #
-    # #     # self.decoder = nn.Sequential(
-    # #     #     nn.ConvTranspose2d(128, 64, (3,2), stride = 2, padding = (1,0)), #23*12
-    # #     #     nn.BatchNorm2d(64),
-    # #     #     nn.ReLU(),
-    # #     #     nn.Dropout(0.3),
-    # #     #     nn.ConvTranspose2d(64, 32,(3,3), stride=2, padding = 1), #45*23
-    # #     #     nn.BatchNorm2d(32),
-    # #     #     nn.ReLU(),
-    # #     #     nn.ConvTranspose2d(32, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
-    # #     #
-    # #     #     # nn.Sigmoid(),
-    # #     # )
-    # #     #
-    # #
-    # #     self.apply(weights_init)
+    #         nn.Conv2d(64, 128, (3, 3), stride=2, padding=1),  # 12*6
+    #         # nn.BatchNorm2d(128),
+    #         nn.ReLU(),
+    #         # nn.Dropout(0.3)
+    #     )
+    #
+    #     self.decoder = nn.Sequential(
+    #         nn.ConvTranspose2d(128, 64, (3,2), stride = 2, padding = (1,0)), #23*12
+    #         # nn.BatchNorm2d(64),
+    #         nn.ReLU(),
+    #         # nn.Dropout(0.3),
+    #         nn.ConvTranspose2d(64, 32,(3,3), stride=2, padding = 1), #45*23
+    #         # nn.BatchNorm2d(32),
+    #         nn.ReLU(),
+    #         nn.ConvTranspose2d(32, last_channel_size, (2, 3), stride=2, padding = (0,1)) #90*45
+    #
+    #         # nn.Sigmoid(),
+    #     )
+    #
+    #
+    #     self.apply(weights_init)
     # #
     # #
     # #
@@ -148,8 +147,8 @@ class FullyConvNet(nn.Module):
     #     x = self.encoder(x)
     #     # print(x.shape)
     #     x = self.decoder(x)
-    #     print(x.shape)
-    #     # x = torch.squeeze(x)
+    #     # print(x.shape)
+    #     x = torch.squeeze(x)
     #    # # print(x.shape)
     #     return x
 
@@ -306,3 +305,22 @@ def  MaskedL1Loss(pred, target, mask):
     loss = diff.abs().mean()
     return loss
 
+def MaskedBerhuLoss(pred, target, mask):
+    diff = target - pred
+    diff = diff[mask]
+    diff = diff.abs()
+    # print(diff.max(),diff.mean())
+    delta_mask = diff > 1
+
+    loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
+    return loss
+
+
+def MaskedHuberLoss(pred, target, mask):
+    diff = target - pred
+    diff = diff[mask]
+    diff = diff.abs()
+    delta_mask = diff < 1
+
+    loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
+    return loss
