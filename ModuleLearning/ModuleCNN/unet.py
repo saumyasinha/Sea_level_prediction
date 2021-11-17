@@ -20,32 +20,32 @@ class UNet(nn.Module):
         super().__init__()
 
 
-        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (4,3), padding_1 = (1,1), kernel_2 = (4,4), padding_2 = (1,1)) #88x44
-        self.dconv_down2 = double_conv(16, 32,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #44*22
-        self.dconv_down3 = double_conv(32, 64,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #22*11
-        #self.dconv_down4 = double_conv(256, 512,  kernel = (3,3), padding = (1,1))
-
-        self.maxpool = nn.MaxPool2d(2)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
-        self.dconv_up2 = double_conv(32 + 64, 32, kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,3), padding_2 = (1,1))
-        self.dconv_up1 = double_conv(32 + 16, 16,kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,4), padding_2 = (2,2)) #90*45
-
-        self.conv_last = nn.Conv2d(16, last_channel_size, 1)
-
-        # self.dconv_down1 = double_conv(dim_channels, 16, kernel_1=(5, 3), kernel_2=(5, 3), padding_1=(0, 0), padding_2=(0, 0))
-        # self.dconv_down2 = double_conv(16, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # self.dconv_down3 = double_conv(32, 64, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # # self.dconv_down4 = double_conv(256, 512, kernel=(3, 3), padding=(1, 1))
+        # self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (4,3), padding_1 = (1,1), kernel_2 = (4,4), padding_2 = (1,1)) #88x44
+        # self.dconv_down2 = double_conv(16, 32,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #44*22
+        # self.dconv_down3 = double_conv(32, 64,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #22*11
+        # #self.dconv_down4 = double_conv(256, 512,  kernel = (3,3), padding = (1,1))
         #
-        # self.maxpool = nn.MaxPool2d(4)
-        # self.upsample = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
+        # self.maxpool = nn.MaxPool2d(2)
+        # self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         #
-        # # self.dconv_up3 = double_conv(256 + 512, 256, kernel=(3, 3), padding=(1, 1))
-        # self.dconv_up2 = double_conv(32 + 64, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # self.dconv_up1 = double_conv(16 + 32, 16, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(3, 2), padding_2=(3, 2))
+        # self.dconv_up2 = double_conv(32 + 64, 32, kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,3), padding_2 = (1,1))
+        # self.dconv_up1 = double_conv(32 + 16, 16,kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,4), padding_2 = (2,2)) #90*45
         #
         # self.conv_last = nn.Conv2d(16, last_channel_size, 1)
+
+        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1=(5, 3), kernel_2=(5, 3), padding_1=(0, 0), padding_2=(0, 0))
+        self.dconv_down2 = double_conv(16, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
+        self.dconv_down3 = double_conv(32, 64, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
+        # self.dconv_down4 = double_conv(256, 512, kernel=(3, 3), padding=(1, 1))
+
+        self.maxpool = nn.MaxPool2d(4)
+        self.upsample = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
+
+        # self.dconv_up3 = double_conv(256 + 512, 256, kernel=(3, 3), padding=(1, 1))
+        self.dconv_up2 = double_conv(32 + 64, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
+        self.dconv_up1 = double_conv(16 + 32, 16, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(3, 2), padding_2=(3, 2))
+
+        self.conv_last = nn.Conv2d(16, last_channel_size, 1)
 
 
     def forward(self, x):

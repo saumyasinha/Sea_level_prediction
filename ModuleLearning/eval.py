@@ -1,20 +1,24 @@
 import numpy as np
 from math import sqrt
-import netCDF4
+# import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-import cartopy.crs as ccrs
+# import cartopy.crs as ccrs
 from matplotlib.colors import TwoSlopeNorm, Normalize
 
 
-def evaluation_metrics(pred, target, mask):
-    diff = target - pred
-    diff = diff[mask] ## at this point I've lost the lat/long knowledge and the array is flattened
-    print(np.max(diff), np.min(diff))
-    l2loss = (diff ** 2).mean()
+def evaluation_metrics(pred, target, mask, weight_map):
+    weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
+    diff = (target - pred)
+    weighted_diff2 = (diff ** 2) * weight_map
+    weighted_diff2 = weighted_diff2[mask] ## at this point I've lost the lat/long knowledge and the array is flattened
+    weighted_diff = np.abs(diff) * weight_map
+    weights_masked = weight_map[mask]
+    # loss = weighted_diff2.mean()
+    l2loss =weighted_diff2.sum() / weights_masked.sum()
     rmse = sqrt(l2loss)
 
-    mae = np.abs(diff).mean()
+    mae = weighted_diff.sum() / weights_masked.sum()
 
     return rmse, mae
 
@@ -137,6 +141,7 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
         # zos = np.ma.masked_where(zos==1e+36, zos)
         zos = np.ma.masked_where(np.isnan(zos), zos)
         print(np.min(zos), np.max(zos), zos.shape)
+        zos = zos*1000
 
     lats = dataset.variables['lat'][:]
     print(lats.min(), lats.max())
@@ -144,10 +149,14 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     print(lons.min(), lons.max())
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))
-    norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    plt.contourf(lons,lats, zos, 60, norm = norm,  cmap="jet",
+    # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
+    v_min=-3.6
+    v_max=7.2
+    levels = np.linspace(v_min, v_max, 60)
+    norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
+    plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels, norm=norm,
                  transform=ccrs.PlateCarree())
-
+    # plt.clim(-0.004, 0.008)
     ax.coastlines()
     plt.colorbar()
     plt.savefig(folder_saving+"/"+save_file)

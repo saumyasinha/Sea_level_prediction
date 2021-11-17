@@ -164,7 +164,7 @@ class FullyConvNet(nn.Module):
 
 
 def trainBatchwise(trainX, trainY, validX,
-                   validY, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
+                   validY,  weight_map_train,weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
     basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
 
@@ -203,13 +203,14 @@ def trainBatchwise(trainX, trainY, validX,
             train_mode = True
 
         indices = torch.randperm(samples)
-        trainX, trainY, train_mask = trainX[indices, :, :, :], trainY[indices, :, :], train_mask[indices, :, :]
+        trainX, trainY, train_mask,weight_map_train = trainX[indices, :, :, :], trainY[indices, :, :], train_mask[indices, :, :], weight_map_train[indices,:,:]
         per_epoch_loss = 0
         count_train = 0
         for i in range(0, samples, batch_size):
             xx = trainX[i: i + batch_size, :, :, :]
             yy = trainY[i: i + batch_size, :, :]
             batch_mask = train_mask[i: i + batch_size, :, :]
+            batch_weight_map = weight_map_train[i: i + batch_size, :, :]
 
             if train_on_gpu:
                 xx, yy = xx.cuda(), yy.cuda()
@@ -217,10 +218,10 @@ def trainBatchwise(trainX, trainY, validX,
             outputs = basic_forecaster.forward(xx)
             optimizer.zero_grad()
             if quantile:
-                loss = quantile_loss(outputs, yy,alphas, batch_mask)
+                loss = quantile_loss(outputs, yy,alphas, batch_mask, batch_weight_map)
 
             else:
-                loss = MaskedMSELoss(outputs, yy, batch_mask)
+                loss = MaskedMSELoss(outputs, yy, batch_mask, batch_weight_map)
 
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -244,14 +245,14 @@ def trainBatchwise(trainX, trainY, validX,
 
             if quantile:
                 validYPred = basic_forecaster.forward(validX)
-                valid_loss_this_epoch = quantile_loss(validYPred,validY,alphas,valid_mask).item()
+                valid_loss_this_epoch = quantile_loss(validYPred,validY,alphas,valid_mask,weight_map_valid).item()
 
                 # valid_loss = self.crps_score(validYPred, validYTrue, np.arange(0.05, 1.0, 0.05))s
                 valid_losses.append(valid_loss_this_epoch)
                 print("Epoch: %d, loss: %1.5f and valid_loss : %1.5f" % (epoch, train_loss_this_epoch, valid_loss_this_epoch))
             else:
                 validYPred = basic_forecaster.forward(validX)
-                valid_loss_this_epoch = MaskedMSELoss(validYPred, validY, valid_mask).item()
+                valid_loss_this_epoch = MaskedMSELoss(validYPred, validY, valid_mask, weight_map_valid).item()
                 valid_losses.append(valid_loss_this_epoch)
                 print("Epoch: %d, train loss: %1.5f and valid loss : %1.5f" % (epoch, train_loss_this_epoch, valid_loss_this_epoch))
 
@@ -287,42 +288,47 @@ def quantile_loss(outputs, target, alphas, mask):
 
 
 
-def MaskedMSELoss(pred, target, mask):
+def MaskedMSELoss(pred, target, mask, weight_map):
     # print(mask.requires_grad)
     # mask = mask.detach()
-    diff = target - pred
-    diff = diff[mask]
-    loss = (diff ** 2).mean()
+    diff = (target - pred)
+    weighted_diff2 = (diff ** 2)*weight_map
+    weighted_diff2 = weighted_diff2[mask]
+    weights_masked = weight_map[mask]
+    # loss = weighted_diff2.mean()
+    loss = weighted_diff2.sum()/weights_masked.sum()
+    # print(weighted_diff2.max(),weights_masked.max(), weights_masked.sum(),weighted_diff2.sum())
+    # print(loss)
     return loss
 
 
 
-def  MaskedL1Loss(pred, target, mask):
-    #print(pred.shape, target.shape, mask.shape)
-    # mask = mask.detach()
-    diff = target - pred
-    diff = diff[mask]
-    loss = diff.abs().mean()
-    return loss
-
-def MaskedBerhuLoss(pred, target, mask):
-    diff = target - pred
-    diff = diff[mask]
-    diff = diff.abs()
-    # print(diff.max(),diff.mean())
-    delta_mask = diff > 1
-
-    loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
-    return loss
-
-
-
-def MaskedHuberLoss(pred, target, mask):
-    diff = target - pred
-    diff = diff[mask]
-    diff = diff.abs()
-    delta_mask = diff < 1
-
-    loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
-    return loss
-
+# def  MaskedL1Loss(pred, target, mask):
+#     #print(pred.shape, target.shape, mask.shape)
+#     # mask = mask.detach()
+#     diff = target - pred
+#     diff = diff[mask]
+#     loss = diff.abs().mean()
+#     return loss
+#
+# def MaskedBerhuLoss(pred, target, mask):
+#     diff = target - pred
+#     diff = diff[mask]
+#     diff = diff.abs()
+#     # print(diff.max(),diff.mean())
+#     delta_mask = diff > 1
+#
+#     loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
+#     return loss
+#
+#
+#
+# def MaskedHuberLoss(pred, target, mask):
+#     diff = target - pred
+#     diff = diff[mask]
+#     diff = diff.abs()
+#     delta_mask = diff < 1
+#
+#     loss = torch.mean((0.5 * delta_mask * (diff** 2)) + ~delta_mask * diff)
+#     return loss
+#

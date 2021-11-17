@@ -114,36 +114,49 @@ def convert_month_to_years(X):
 
 def get_image_patches(X,y):
 
-    X_with_patches = []
+    if X is not None:
+        X_with_patches = []
     y_with_patches = []
-    for row in range(X.shape[0]):
-        X_row = X[row]
+    for row in range(y.shape[0]):
+        if X is not None:
+            X_row = X[row]
+            subs_X = []
+
         y_row = y[row]
-        subs_X = []
         subs_Y = []
 
         i=0
         while i<360:
             j=0
             while j<180:
-                subX = X_row[i:i+90,j:j+45,:]
-                subY = y_row[i:i+90,j:j+45]
+                if X is not None:
+                    subX = X_row[i:i+90,j:j+45,:]
+                    subs_X.append(subX)
 
-                subs_X.append(subX)
+
+                subY = y_row[i:i+90,j:j+45]
                 subs_Y.append(subY)
 
                 j = j+45
 
             i = i + 90
 
-        X_with_patches.append(subs_X)
+        if X is not None:
+            X_with_patches.append(subs_X)
+
         y_with_patches.append(subs_Y)
     # print(X_with_patches[0][0].shape)
-    X_with_patches = np.concatenate(X_with_patches)
+    if X is not None:
+        X_with_patches = np.concatenate(X_with_patches)
     y_with_patches = np.concatenate(y_with_patches)
 
-    print(X_with_patches.shape, y_with_patches.shape)
-    return X_with_patches,y_with_patches
+    if X is not None:
+        print(X_with_patches.shape)
+        print(y_with_patches.shape)
+        return X_with_patches,y_with_patches
+    else:
+        print(y_with_patches.shape)
+        return y_with_patches
 
 
 
@@ -164,12 +177,12 @@ def normalize_from_train(X_train, X_test,y_train, y_test, split_index):
         # std_for_month = np.std(X_sub, axis=2)
         # print(avg_for_month.shape, avg_for_month[:,:,np.newaxis].shape)
         X_train[:,:,indices_month] = X_train[:,:,indices_month] - avg_for_month[:,:,np.newaxis]
-        y_train[:, :, indices_month] = y_train[:, :, indices_month] - avg_for_month[:, :, np.newaxis]
+        # y_train[:, :, indices_month] = y_train[:, :, indices_month] - avg_for_month[:, :, np.newaxis]
 
 
         indices_month_test = [i for i in range(n_months_test) if i%12==month]
         X_test[:, :, indices_month_test] = X_test[:, :, indices_month_test] - avg_for_month[:,:,np.newaxis]
-        y_test[:, :, indices_month_test] = y_test[:, :, indices_month_test] - avg_for_month[:, :, np.newaxis]
+        # y_test[:, :, indices_month_test] = y_test[:, :, indices_month_test] - avg_for_month[:, :, np.newaxis]
 
 
     return X_train, X_test, y_train, y_test

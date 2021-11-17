@@ -19,22 +19,22 @@ def get_target_mask(y):
     y[np.isnan(y)] = 0
     return y, mask
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,n_predictions =1):
     valid = True
     outputs_quantile = len(alphas)
 
     y_train, train_mask = get_target_mask(y_train)
     y_valid, valid_mask = get_target_mask(y_valid)
 
-    X_train, y_train, train_mask = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask)
-    X_valid, y_valid, valid_mask = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask)
+    X_train, y_train, train_mask, weight_map_train = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask), torch.from_numpy(weight_map_train)
+    X_valid, y_valid, valid_mask, weight_map_valid = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask), torch.from_numpy(weight_map_valid)
 
     X_train = X_train.permute(0, 3, 1, 2)
     X_valid = X_valid.permute(0, 3, 1, 2)
 
     if convlstm==False:
 
-        train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid,  weight_map_train,weight_map_valid, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 
@@ -55,7 +55,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, n_features, n_timesteps,
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, n_predictions = 1):
+def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -110,7 +110,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
 
         np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
         y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
-        test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask)
+        test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
@@ -133,7 +133,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, n_features, n_timesteps,fol
         y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
         np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
-        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask)
+        valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask, weight_map_wo_patches)
 
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
 

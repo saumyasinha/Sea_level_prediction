@@ -191,7 +191,7 @@ class ConvLSTM(nn.Module):
             hidden_state = self._init_hidden(batch_size=b,
                                              image_size=(h, w))
 
-        layer_output_list = []
+        # layer_output_list = []
         last_state_list = []
 
         seq_len = input_tensor.size(1)
@@ -212,15 +212,17 @@ class ConvLSTM(nn.Module):
             if layer_idx == self.num_layers -1:
                 h = self.conv_last(h)
                 h = torch.squeeze(h)
-            layer_output_list.append(layer_output)
+
+            ## the layer output will still have the old h
+            # layer_output_list.append(layer_output)
             last_state_list.append([h, c])
 
 
         if not self.return_all_layers:
-            layer_output_list = layer_output_list[-1:]
+            # layer_output_list = layer_output_list[-1:]
             last_state_list = last_state_list[-1:]
 
-        return layer_output_list, last_state_list
+        return _, last_state_list
 
     def _init_hidden(self, batch_size, image_size):
         init_states = []
@@ -301,7 +303,7 @@ def trainBatchwise(trainX, trainY, validX,
 
             _, last_states = basic_forecaster.forward(xx)
             outputs = last_states[0][0]  # 0 for layer index, 0 for h index
-            # print(outputs.shape)
+            print(outputs.shape, type(outputs))
             optimizer.zero_grad()
             if quantile:
                 loss = quantile_loss(outputs, yy, alphas, batch_mask)
@@ -311,6 +313,8 @@ def trainBatchwise(trainX, trainY, validX,
 
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
+            #gradient clipping
+            # torch.nn.utils.clip_grad_norm_(basic_forecaster.parameters(), 1)
             # perform a single optimization step (parameter update)
             optimizer.step()
             # scheduler.step()
@@ -328,7 +332,7 @@ def trainBatchwise(trainX, trainY, validX,
 
             _, last_states = basic_forecaster.forward(validX)
             validYPred = last_states[0][0]  # 0 for layer index, 0 for h index
-            # print(validYPred.shape)
+            print(validYPred.shape, type(validYPred))
 
             if quantile:
                 # validYPred = basic_forecaster.forward(validX)

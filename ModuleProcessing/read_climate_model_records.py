@@ -64,7 +64,33 @@ def read_binary_files(path):
             os.remove(path + filename)
 
 
+def get_weights_perpixel(path):
 
+    path_nc = path+"/nc_files/"
+    for filename in os.listdir(path_nc):
+        if filename.endswith(".nc"):
+            fp = path_nc + filename
+            nc = netCDF4.Dataset(fp)
+
+            lats = np.array(nc.variables['lat'][:])
+            for var in nc.variables.values():
+                print(var)
+
+            weights_per_lat = np.cos(lats)
+            # norm_weights = weights_per_lat/weights_per_lat.sum()
+
+            weight_map = np.full((360,180),0.0)
+            for i in range(180):
+                weight_map[:,i] = weights_per_lat[i]
+            print(weight_map.shape)
+            print(weight_map[0,0], weight_map[1,0], weights_per_lat[0])
+            # print(np.max(weights), np.min(weights))
+            # norm_weights = weights/weights.sum()
+            # print(np.max(norm_weights), np.min(norm_weights))
+
+            np.save(path +"/npy_files/weights_" + filename[:-7] + '.npy', weight_map)
+
+            break
 
 
 def main():
@@ -76,15 +102,17 @@ def main():
 
     historical_path = path_folder + "1850-2014/"
     future_path = path_folder + "2015-2100/"
+    #
+    # gz_extract(historical_path)
+    # gz_extract(future_path)
+    #
+    # # read_binary_files(historical_path)
+    # # read_binary_files(future_path)
+    #
+    # read_nc_files(historical_path)
+    # read_nc_files(future_path)
 
-    gz_extract(historical_path)
-    gz_extract(future_path)
-
-    # read_binary_files(historical_path)
-    # read_binary_files(future_path)
-
-    read_nc_files(historical_path)
-    read_nc_files(future_path)
+    get_weights_perpixel(historical_path)
 
 
 
