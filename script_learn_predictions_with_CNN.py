@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
+from skimage.measure import block_reduce
 from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
 
@@ -23,10 +24,10 @@ path_folder = path_sealevel_folder
 historical_path = path_folder + "1850-2014/npy_files/"
 future_path = path_folder + "2015-2100/npy_files/"
 
-train_start_year = 1930 #1880 #1900
-train_end_year = 2040 #1990
-test_start_year = 2041 #1991
-test_end_year = 2070 #2020
+train_start_year = 1930 # 1880 #
+train_end_year =  2040 #1990 #
+test_start_year =  2041 #1991
+test_end_year =  2070 #2020 #
 
 lead_years = 30
 quantile = False
@@ -40,18 +41,20 @@ reg = "CNN"
 
 
 # sub_reg = "convlstm_with_1yr_lag_monthly_updated_data_w_patches"
-sub_reg = "cnn_with_1yr_lag_unet_wo_patches_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
+# sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12 #12
 yearly = False
+patches = True
 
 
 
 batch_size = 8
-epochs = 300
+epochs = 1
 lr = 1e-4
 
 
@@ -67,6 +70,7 @@ def main():
         f = open(folder_saving +"/results.txt", 'a')
 
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
+        weight_map = np.abs(weight_map)
         print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years)
@@ -116,29 +120,44 @@ def main():
         y_train = y[:train_valid_split_index]
         X_valid = X[train_valid_split_index:]
         y_valid = y[train_valid_split_index:]
-        weight_map_train = np.repeat(weight_map[None,...],len(X_train),axis=0)
-        weight_map_valid = np.repeat(weight_map[None,...],len(X_valid),axis=0)
 
-        print(weight_map_train.shape, weight_map_valid.shape)
+        # print(weight_map_train.shape, weight_map_valid.shape)
 
         print("train/valid sizes: ", len(X_train), " ", len(X_valid))
 
         # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
-        X_train_w_patches,y_train_w_patches = X_train,y_train #preprocessing.get_image_patches(X_train,y_train)
-        X_valid_w_patches, y_valid_w_patches = X_valid, y_valid #preprocessing.get_image_patches(X_valid, y_valid)
-        X_test_w_patches, y_test_w_patches = X_test, y_test #preprocessing.get_image_patches(X_test, y_test)
-        weight_map_train_w_patches = weight_map_train #preprocessing.get_image_patches(None,weight_map_train)
-        weight_map_valid_w_patches = weight_map_valid #preprocessing.get_image_patches(None,weight_map_valid)
+        if patches:
+            weight_map_train = np.repeat(weight_map[None,...],len(X_train),axis=0)
+            weight_map_valid = np.repeat(weight_map[None,...],len(X_valid),axis=0)
 
-        print(weight_map_train_w_patches.shape)
+            X_train_input,y_train_input = preprocessing.get_image_patches(X_train,y_train)# preprocessing.downscale_input(X_train,y_train)
+            X_valid_input, y_valid_input =  preprocessing.get_image_patches(X_valid, y_valid) #preprocessing.downscale_input(X_valid, y_valid)
+            X_test_input, y_test_input = preprocessing.get_image_patches(X_test, y_test) #preprocessing.downscale_input(X_test, y_test) # #
+            weight_map_train_input = preprocessing.get_image_patches(None,weight_map_train)
+            weight_map_valid_input = preprocessing.get_image_patches(None, weight_map_valid)
+            print(weight_map_train_input.shape)
+
+        else:
+            weight_map_train = np.repeat(weight_map[None, ...], len(X_train), axis=0)
+            weight_map_valid = np.repeat(weight_map[None, ...], len(X_valid), axis=0)
+
+            X_train_input, y_train_input = preprocessing.downscale_input(X_train,y_train)
+            X_valid_input, y_valid_input = preprocessing.downscale_input(X_valid, y_valid)
+            X_test_input, y_test_input = preprocessing.downscale_input(X_test, y_test) # #
+            weight_map_train_input = preprocessing.downscale_input(None, weight_map_train)
+            weight_map_valid_input = preprocessing.downscale_input(None, weight_map_valid)
+            print(weight_map_train_input.shape)
+
+
+
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
 
-        y_valid_w_patches_copy = y_valid_w_patches.copy()  # if you are not doing this then pass X_valid and y_valid as None
+        y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
         # y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train_w_patches, y_train_w_patches, X_valid_w_patches, y_valid_w_patches, weight_map_train_w_patches, weight_map_valid_w_patches, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_w_patches, y_valid_w_patches_copy, X_test_w_patches, y_test_w_patches, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()

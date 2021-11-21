@@ -203,7 +203,7 @@ def trainBatchwise(trainX, trainY, validX,
             train_mode = True
 
         indices = torch.randperm(samples)
-        trainX, trainY, train_mask,weight_map_train = trainX[indices, :, :, :], trainY[indices, :, :], train_mask[indices, :, :], weight_map_train[indices,:,:]
+        trainX, trainY, train_mask, weight_map_train = trainX[indices, :, :, :], trainY[indices, :, :], train_mask[indices, :, :], weight_map_train[indices,:,:]
         per_epoch_loss = 0
         count_train = 0
         for i in range(0, samples, batch_size):
@@ -213,7 +213,7 @@ def trainBatchwise(trainX, trainY, validX,
             batch_weight_map = weight_map_train[i: i + batch_size, :, :]
 
             if train_on_gpu:
-                xx, yy = xx.cuda(), yy.cuda()
+                xx, yy,batch_weight_map = xx.cuda(), yy.cuda(),batch_weight_map.cuda()
 
             outputs = basic_forecaster.forward(xx)
             optimizer.zero_grad()
@@ -240,7 +240,7 @@ def trainBatchwise(trainX, trainY, validX,
             basic_forecaster.eval()
             if train_on_gpu:
 
-                validX,validY = validX.cuda(), validY.cuda()
+                validX,validY,weight_map_valid = validX.cuda(), validY.cuda(),weight_map_valid.cuda()
 
 
             if quantile:
@@ -292,12 +292,11 @@ def MaskedMSELoss(pred, target, mask, weight_map):
     # print(mask.requires_grad)
     # mask = mask.detach()
     diff = (target - pred)
-    weighted_diff2 = (diff ** 2)*weight_map
+    weighted_diff2 = (diff ** 2)*weight_map #.expand_as(diff)
     weighted_diff2 = weighted_diff2[mask]
     weights_masked = weight_map[mask]
     # loss = weighted_diff2.mean()
     loss = weighted_diff2.sum()/weights_masked.sum()
-    # print(weighted_diff2.max(),weights_masked.max(), weights_masked.sum(),weighted_diff2.sum())
     # print(loss)
     return loss
 

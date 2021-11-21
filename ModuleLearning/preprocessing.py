@@ -1,5 +1,5 @@
 import numpy as np
-
+from skimage.measure import block_reduce
 
 def remove_land_values(xr):
 
@@ -158,6 +158,17 @@ def get_image_patches(X,y):
         print(y_with_patches.shape)
         return y_with_patches
 
+
+def downscale_input(X,y):
+
+    X_down = None
+    if X is not None:
+        X_down = block_reduce(X, (1,2,2,1), np.mean)
+        print(X_down.shape)
+    y_down = block_reduce(y, (1,2,2), np.mean)
+    print(y_down.shape)
+
+    return X_down,y_down
 
 
 def normalize_from_train(X_train, X_test,y_train, y_test, split_index):
