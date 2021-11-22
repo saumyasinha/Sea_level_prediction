@@ -1,5 +1,5 @@
 import numpy as np
-from skimage.measure import block_reduce
+#from skimage.measure import block_reduce
 
 def remove_land_values(xr):
 

@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
-from skimage.measure import block_reduce
+#from skimage.measure import block_reduce
 from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
 
@@ -54,7 +54,7 @@ patches = True
 
 
 batch_size = 8
-epochs = 1
+epochs = 300
 lr = 1e-4
 
 
