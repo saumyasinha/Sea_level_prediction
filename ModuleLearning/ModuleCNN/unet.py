@@ -20,7 +20,7 @@ class UNet(nn.Module):
         super().__init__()
 
 
-        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (4,3), padding_1 = (1,1), kernel_2 = (4,4), padding_2 = (1,1)) #88x44
+        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (3,4), padding_1 = (1,1), kernel_2 = (3,4), padding_2 = (1,1)) # kernel1changed from 4,3 to 3,4 and kernel 2 from 4,4 to 3,4 when downsampled image         #88x44
         self.dconv_down2 = double_conv(16, 32,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #44*22
         self.dconv_down3 = double_conv(32, 64,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #22*11
         #self.dconv_down4 = double_conv(256, 512,  kernel = (3,3), padding = (1,1))
@@ -29,7 +29,7 @@ class UNet(nn.Module):
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
         self.dconv_up2 = double_conv(32 + 64, 32, kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,3), padding_2 = (1,1))
-        self.dconv_up1 = double_conv(32 + 16, 16,kernel_1 = (3,3), padding_1 = (1,1),kernel_2 = (3,4), padding_2 = (2,2)) #90*45
+        self.dconv_up1 = double_conv(32 + 16, 16,kernel_1 = (3,4), padding_1 = (1,2),kernel_2 = (3,4), padding_2 = (1,2)) #90*45 Kernel 1 (3,3) to (3,4) and padding_1 from 1,1 to 1,2 and padding 2 from 2,2, to 1,2
 
         self.conv_last = nn.Conv2d(16, last_channel_size, 1)
 
@@ -112,7 +112,7 @@ class UNet(nn.Module):
         x = self.dconv_up2(x)
         #print("up2", x.shape)
         x = self.upsample(x)
-       # print("upsample", x.shape)
+        #print("upsample", x.shape)
         x = torch.cat([x, conv1], dim=1)
         #print("concat",x.shape)
         x = self.dconv_up1(x)

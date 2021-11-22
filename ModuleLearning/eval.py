@@ -4,7 +4,7 @@ from math import sqrt
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
 # import cartopy.crs as ccrs
-from matplotlib.colors import TwoSlopeNorm, Normalize
+# from matplotlib.colors import TwoSlopeNorm, Normalize
 
 
 def evaluation_metrics(pred, target, mask, weight_map):
@@ -116,8 +116,8 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     # plt.savefig(folder_saving+"/"+save_file)
     # plt.close()
 
-    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
-    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_MPI-ESM1-2-HR_zos_fr_1850_2014.bin.nc"
+    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
+    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
     # for var in dataset.variables.values():
@@ -150,8 +150,8 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    v_min=-3.6
-    v_max=7.2
+    v_min=-10
+    v_max=13
     levels = np.linspace(v_min, v_max, 60)
     norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels, norm=norm,

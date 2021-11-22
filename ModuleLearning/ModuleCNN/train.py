@@ -105,8 +105,8 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
         print(y_pred.shape)
-        y_test_wo_patches = eval.combine_image_patches(y_test)
-        y_pred_wo_patches = eval.combine_image_patches(y_pred)
+        y_test_wo_patches = y_test #eval.combine_image_patches(y_test)
+        y_pred_wo_patches = y_pred #eval.combine_image_patches(y_pred)
 
         np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
         y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
@@ -129,8 +129,8 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
         print(y_valid_pred.shape)
 
        #
-        y_valid_wo_patches = eval.combine_image_patches(y_valid)
-        y_valid_pred_wo_patches = eval.combine_image_patches(y_valid_pred)
+        y_valid_wo_patches = y_valid #eval.combine_image_patches(y_valid)
+        y_valid_pred_wo_patches = y_valid_pred #eval.combine_image_patches(y_valid_pred)
         np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask, weight_map_wo_patches)

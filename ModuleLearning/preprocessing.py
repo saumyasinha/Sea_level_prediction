@@ -57,7 +57,7 @@ def year_start_index(year):
     idx = (year - 1850) * 12
     return idx
 
-def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years):
+def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling=False):
 
     '''
     if train_start_year = 1900, train_end_year = 1990,
@@ -89,6 +89,10 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     ##masking land values with np.nan
     train[train == 1e+36] = np.nan
     test[test == 1e+36] = np.nan
+
+    if downscaling:
+        train = downscale_input(train)
+        test = downscale_input(test)
 
     print(np.nanmin(train), np.nanmax(train), np.nanmin(test), np.nanmax(test), np.isnan(train).sum(), np.isnan(test).sum())
     return train, test
@@ -159,16 +163,12 @@ def get_image_patches(X,y):
         return y_with_patches
 
 
-def downscale_input(X,y):
+def downscale_input(x):
 
-    X_down = None
-    if X is not None:
-        X_down = block_reduce(X, (1,2,2,1), np.mean)
-        print(X_down.shape)
-    y_down = block_reduce(y, (1,2,2), np.mean)
-    print(y_down.shape)
+    x_down = block_reduce(x, (2,2,1), np.mean)
+    print(x_down.shape)
 
-    return X_down,y_down
+    return x_down
 
 
 def normalize_from_train(X_train, X_test,y_train, y_test, split_index):

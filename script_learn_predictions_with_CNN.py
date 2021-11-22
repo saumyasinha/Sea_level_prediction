@@ -40,21 +40,21 @@ reg = "CNN"
 
 
 
-# sub_reg = "convlstm_with_1yr_lag_monthly_updated_data_w_patches"
-sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
-# sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
+# sub_reg = "cnn_with_1yr_lag_unet_w_patches_not_normalized"
+# sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12 #12
 yearly = False
-patches = True
+downscaling = True
 
 
 
 batch_size = 8
-epochs = 1
+epochs = 300
 lr = 1e-4
 
 
@@ -71,9 +71,11 @@ def main():
 
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
         weight_map = np.abs(weight_map)
+        if downscaling:
+            weight_map = block_reduce(weight_map, (2,2), np.mean)
         print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
-        train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years)
+        train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling)
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
         # np.save(path_data_fr+ model + "/"+"test_for_" + str(test_start_year) + "-" + str(test_end_year) + ".npy", test)
 
@@ -127,26 +129,20 @@ def main():
 
         # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
-        if patches:
-            weight_map_train = np.repeat(weight_map[None,...],len(X_train),axis=0)
-            weight_map_valid = np.repeat(weight_map[None,...],len(X_valid),axis=0)
+        weight_map_train = np.repeat(weight_map[None, ...], len(X_train), axis=0)
+        weight_map_valid = np.repeat(weight_map[None, ...], len(X_valid), axis=0)
+        X_train_input, y_train_input = X_train,y_train
+        X_valid_input, y_valid_input = X_valid, y_valid
+        X_test_input, y_test_input = X_test, y_test
+        weight_map_train_input = weight_map_train
+        weight_map_valid_input = weight_map_valid
 
+        if downscaling is False:
             X_train_input,y_train_input = preprocessing.get_image_patches(X_train,y_train)# preprocessing.downscale_input(X_train,y_train)
             X_valid_input, y_valid_input =  preprocessing.get_image_patches(X_valid, y_valid) #preprocessing.downscale_input(X_valid, y_valid)
             X_test_input, y_test_input = preprocessing.get_image_patches(X_test, y_test) #preprocessing.downscale_input(X_test, y_test) # #
             weight_map_train_input = preprocessing.get_image_patches(None,weight_map_train)
             weight_map_valid_input = preprocessing.get_image_patches(None, weight_map_valid)
-            print(weight_map_train_input.shape)
-
-        else:
-            weight_map_train = np.repeat(weight_map[None, ...], len(X_train), axis=0)
-            weight_map_valid = np.repeat(weight_map[None, ...], len(X_valid), axis=0)
-
-            X_train_input, y_train_input = preprocessing.downscale_input(X_train,y_train)
-            X_valid_input, y_valid_input = preprocessing.downscale_input(X_valid, y_valid)
-            X_test_input, y_test_input = preprocessing.downscale_input(X_test, y_test) # #
-            weight_map_train_input = preprocessing.downscale_input(None, weight_map_train)
-            weight_map_valid_input = preprocessing.downscale_input(None, weight_map_valid)
             print(weight_map_train_input.shape)
 
 
@@ -167,12 +163,12 @@ def main():
         #
         # # #
         # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        # # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # # eval.plot(valid_trend, folder_saving, "valid_trend_1991-2020_same_yaxis", trend=True)
-        # # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # # eval.plot(model_trend, folder_saving, "model_trend_1991-2020_same_y_axis", trend=True)
-        # # eval.plot(model_trend - valid_trend, folder_saving, "diff_trend_1991-2020_same_y_axis", trend=True)
-        #
+        # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        # eval.plot(valid_trend, folder_saving, "valid_trend_1991-2020_same_yaxis", trend=True)
+        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        # eval.plot(model_trend, folder_saving, "model_trend_1991-2020_same_y_axis", trend=True)
+        # eval.plot(model_trend - valid_trend, folder_saving, "diff_trend_1991-2020_same_y_axis", trend=True)
+
         # # # #
         # # yr_JAN2014 = y_valid[-7*12]
         # # yr_JAN2014_pred = y_valid_pred[-7*12]
@@ -226,14 +222,14 @@ def main():
         # #
         # #
         #
-        # # ## plot persistence
+        # ## plot persistence
         # y_persistence = y_train[-30*12:,:,:] ##1961-1990
         # persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly)
         # eval.plot(persistence_trend, folder_saving, "persistence_trend_1991-2020_same_yaxis", trend=True)
         # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
         # # eval.plot(model_trend, folder_saving, "model_trend_1991-2020_same_y_axis", trend=True)
         # eval.plot(model_trend - persistence_trend, folder_saving, "diff_w_persis_trend_1991-2020_same_y_axis", trend=True)
-        #
+
 
 if __name__=='__main__':
     main()
