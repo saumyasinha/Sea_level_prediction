@@ -164,7 +164,7 @@ class FullyConvNet(nn.Module):
 
 
 def trainBatchwise(trainX, trainY, validX,
-                   validY,  weight_map_train,weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
+                   validY,  weight_map_train, weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
     basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
 

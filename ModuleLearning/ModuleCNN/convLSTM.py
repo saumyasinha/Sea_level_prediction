@@ -246,7 +246,7 @@ class ConvLSTM(nn.Module):
 
 
 def trainBatchwise(trainX, trainY, validX,
-                   validY, train_mask, valid_mask, n_output_length, n_features, n_timesteps, epochs, batch_size, lr,
+                   validY, weight_map_train, weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps, epochs, batch_size, lr,
                    folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, hidden_dim, num_layers, patience=None, verbose=None,
                    reg_lamdba=0):  # 0.0001):
 
@@ -272,7 +272,7 @@ def trainBatchwise(trainX, trainY, validX,
 
     print(basic_forecaster)
 
-    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr) #, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
     # scheduler = StepLR(optimizer, step_size=25, gamma=0.1)
     # criterion = torch.nn.MSELoss()
     # criterion = nn.L1Loss()
@@ -290,26 +290,27 @@ def trainBatchwise(trainX, trainY, validX,
             train_mode = True
 
         indices = torch.randperm(samples)
-        trainX, trainY, train_mask = trainX[indices, :, :, :, :], trainY[indices, :, :], train_mask[indices, :, :]
+        trainX, trainY, train_mask, weight_map_train = trainX[indices, :, :, :, :], trainY[indices, :, :], train_mask[indices, :, :], weight_map_train[indices,:,:]
         per_epoch_loss = 0
         count_train = 0
         for i in range(0, samples, batch_size):
             xx = trainX[i: i + batch_size, :, :, :, :]
             yy = trainY[i: i + batch_size, :, :]
             batch_mask = train_mask[i: i + batch_size, :, :]
+            batch_weight_map = weight_map_train[i: i + batch_size, :, :]
 
             if train_on_gpu:
-                xx, yy = xx.cuda(), yy.cuda()
+                xx, yy, batch_weight_map = xx.cuda(), yy.cuda(), batch_weight_map.cuda()
 
             _, last_states = basic_forecaster.forward(xx)
             outputs = last_states[0][0]  # 0 for layer index, 0 for h index
-            print(outputs.shape, type(outputs))
+            # print(outputs.shape, type(outputs))
             optimizer.zero_grad()
             if quantile:
-                loss = quantile_loss(outputs, yy, alphas, batch_mask)
+                loss = quantile_loss(outputs, yy, alphas, batch_mask, batch_weight_map)
 
             else:
-                loss = MaskedMSELoss(outputs, yy, batch_mask)
+                loss = MaskedMSELoss(outputs, yy, batch_mask, batch_weight_map)
 
             # backward pass: compute gradient of the loss with respect to model parameters
             loss.backward()
@@ -328,7 +329,7 @@ def trainBatchwise(trainX, trainY, validX,
             train_mode = False
             basic_forecaster.eval()
             if train_on_gpu:
-                validX, validY = validX.cuda(), validY.cuda()
+                validX, validY, weight_map_valid = validX.cuda(), validY.cuda(), weight_map_valid.cuda()
 
             _, last_states = basic_forecaster.forward(validX)
             validYPred = last_states[0][0]  # 0 for layer index, 0 for h index
@@ -336,7 +337,7 @@ def trainBatchwise(trainX, trainY, validX,
 
             if quantile:
                 # validYPred = basic_forecaster.forward(validX)
-                valid_loss_this_epoch = quantile_loss(validYPred, validY, alphas, valid_mask).item()
+                valid_loss_this_epoch = quantile_loss(validYPred, validY, alphas, valid_mask, weight_map_valid).item()
 
                 # valid_loss = self.crps_score(validYPred, validYTrue, np.arange(0.05, 1.0, 0.05))s
                 valid_losses.append(valid_loss_this_epoch)
@@ -344,7 +345,7 @@ def trainBatchwise(trainX, trainY, validX,
                 epoch, train_loss_this_epoch, valid_loss_this_epoch))
             else:
                 # validYPred = basic_forecaster.forward(validX)
-                valid_loss_this_epoch = MaskedMSELoss(validYPred, validY, valid_mask).item()
+                valid_loss_this_epoch = MaskedMSELoss(validYPred, validY, valid_mask, weight_map_valid).item()
                 valid_losses.append(valid_loss_this_epoch)
                 print("Epoch: %d, train loss: %1.5f and valid loss : %1.5f" % (
                 epoch, train_loss_this_epoch, valid_loss_this_epoch))
@@ -380,42 +381,15 @@ def quantile_loss(outputs, target, alphas, mask):
     return torch.mean(loss)
 
 
-def MaskedMSELoss(pred, target, mask):
+
+def MaskedMSELoss(pred, target, mask, weight_map):
     # print(mask.requires_grad)
     # mask = mask.detach()
-    diff = target - pred
-    diff = diff[mask]
-    loss = (diff ** 2).mean()
+    diff = (target - pred)
+    weighted_diff2 = (diff ** 2)*weight_map #.expand_as(diff)
+    weighted_diff2 = weighted_diff2[mask]
+    weights_masked = weight_map[mask]
+    # loss = weighted_diff2.mean()
+    loss = weighted_diff2.sum()/weights_masked.sum()
+    # print(loss)
     return loss
-
-
-def MaskedL1Loss(pred, target, mask):
-    # print(pred.shape, target.shape, mask.shape)
-    # mask = mask.detach()
-    diff = target - pred
-    diff = diff[mask]
-    loss = diff.abs().mean()
-    return loss
-
-
-def MaskedBerhuLoss(pred, target, mask):
-    diff = target - pred
-    diff = diff[mask]
-    diff = diff.abs()
-    # print(diff.max(),diff.mean())
-    delta_mask = diff > 1
-
-    loss = torch.mean((0.5 * delta_mask * (diff ** 2)) + ~delta_mask * diff)
-    return loss
-
-
-def MaskedHuberLoss(pred, target, mask):
-    diff = target - pred
-    diff = diff[mask]
-    diff = diff.abs()
-    delta_mask = diff < 1
-
-    loss = torch.mean((0.5 * delta_mask * (diff ** 2)) + ~delta_mask * diff)
-    return loss
-
-

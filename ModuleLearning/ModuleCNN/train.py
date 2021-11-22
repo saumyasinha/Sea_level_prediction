@@ -34,7 +34,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
 
     if convlstm==False:
 
-        train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid,  weight_map_train,weight_map_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 
@@ -44,7 +44,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
 
         print(X_train.shape)
 
-        train_loss, valid_loss = trainconvlstm(X_train, y_train, X_valid, y_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconvlstm(X_train, y_train, X_valid, y_valid, weight_map_train, weight_map_valid, train_mask, valid_mask,
                                            n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate,
                                            folder_saving, model_saved, quantile,
                                            alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile,

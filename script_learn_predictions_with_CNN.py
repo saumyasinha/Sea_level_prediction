@@ -31,7 +31,7 @@ test_end_year =  2070 #2020 #
 
 lead_years = 30
 quantile = False
-convlstm = False
+convlstm = True
 hidden_dim = 15
 num_layers=1
 alphas = np.arange(0.05, 1.0, 0.05)
@@ -42,7 +42,7 @@ reg = "CNN"
 
 # sub_reg = "cnn_with_1yr_lag_unet_w_patches_not_normalized"
 # sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
@@ -53,8 +53,8 @@ downscaling = True
 
 
 
-batch_size = 8
-epochs = 300
+batch_size = 4
+epochs = 200
 lr = 1e-4
 
 

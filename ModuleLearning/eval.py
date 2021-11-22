@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
 # import cartopy.crs as ccrs
 # from matplotlib.colors import TwoSlopeNorm, Normalize
+from skimage.measure import block_reduce
 
 
 
@@ -144,11 +145,13 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
         print(np.min(zos), np.max(zos), zos.shape)
         zos = zos*1000
 
-    lats = dataset.variables['lat'][:]
-    print(lats.min(), lats.max())
+    lats =dataset.variables['lat'][:]
+    print(lats.shape)
+    lats = block_reduce(lats, (2,), np.mean)
+    print(lats.min(), lats.max(), type(lats))
     lons = dataset.variables['lon'][:]
-    print(lons.min(), lons.max())
-
+    lons = block_reduce(lons, (2,), np.mean)
+    print(lons.min(), lons.max(), type(lons), lons.shape)
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
     v_min=-10
