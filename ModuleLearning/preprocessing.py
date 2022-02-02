@@ -176,7 +176,7 @@ def get_image_patches(X,y):
 
 def downscale_input(x):
 
-    x_down = block_reduce(x, (2,2,1), np.mean)
+    x_down = block_reduce(x, (2,2,1), np.mean)#(2,2,1)
     print(x_down.shape)
 
     return x_down

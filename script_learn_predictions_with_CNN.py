@@ -1,6 +1,7 @@
 import os
 import numpy as np
-from math import sqrt
+import matplotlib
+matplotlib.use('Agg')
 from sklearn.model_selection import train_test_split
 # from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
@@ -9,8 +10,9 @@ from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
-path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_local
+path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
+path_project = path_cluster
+
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
@@ -38,13 +40,12 @@ quantile = False
 convlstm = False
 hidden_dim = 12
 num_layers=1
+kernel_size = [(3,3)]
+
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
 
-
-
-# sub_reg = "cnn_with_1yr_lag_unet_w_patches_not_normalized"
 sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
 # sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
 
@@ -61,7 +62,7 @@ if include_heat:
 
 
 batch_size = 6
-epochs = 1
+epochs = 200
 lr = 1e-4
 
 
@@ -81,7 +82,7 @@ def main():
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
         weight_map = np.abs(weight_map)
         if downscaling:
-            weight_map = block_reduce(weight_map, (2,2), np.mean)
+            weight_map = block_reduce(weight_map, (2,2), np.mean) #(2,2)
         print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling)
@@ -178,16 +179,14 @@ def main():
             print(weight_map_train_input.shape)
 
 
+        model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
 
-
-        # model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-        #
-        # y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
-        # # y_valid_copy = y_valid.copy()
-        # train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        # valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-        # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
+        # y_valid_copy = y_valid.copy()
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
 
 
@@ -253,33 +252,6 @@ def main():
         #             print(lons[pt[0]], lats[pt[1]])
         #             eval.single_point_test(pt[0], pt[1], y_valid_pred_mean_removed, y_valid_mean_removed, years = list(range(2041,2071)), count=count, folder_saving=folder_saving)
         #             count=count+1
-
-
-        # y_valid_pred_mean_masked = np.ma.masked_where(np.isnan(y_valid_mean), y_valid_pred_mean)
-        # eval.plot(y_valid_mean, folder_saving, "model_2041-2070_same_y_axis", trend=True)
-        # eval.plot(y_valid_pred_mean_masked, folder_saving, "predictions_2041-2070_same_y_axis", trend=True)
-        # eval.plot(y_valid_mean - y_valid_pred_mean, folder_saving, "model-predictions_2041-2070_same_y_axis", trend=True)
-
-
-        # #year-averaged-plots
-        # yr_2051_2060_with_all_yrs = y_valid[-20*12:-10*12, :, :]
-        # mean_2051_2060 = np.nanmean(yr_2051_2060_with_all_yrs)
-        # yr_2051_2060_with_all_yrs_mean_removed = yr_2051_2060_with_all_yrs - mean_2051_2060
-        #
-        # yr_2051_2060_pred_with_all_yrs = y_valid_pred[-20 * 12:-10 * 12, :, :]
-        # yr_2051_2060_pred_with_all_yrs_mean_removed = yr_2051_2060_pred_with_all_yrs - mean_2051_2060
-        #
-        # rmse_for_decade, mae_for_decade = eval.evaluation_metrics(yr_2051_2060_pred_with_all_yrs,yr_2051_2060_with_all_yrs, mask = ~np.isnan(yr_2051_2060_with_all_yrs), weight_map = weight_map)
-        #
-        # print("rmse for the decade 2051-2060: ", rmse_for_decade)
-        #
-        # yr_2051_2060_mean_removed = np.mean(yr_2051_2060_with_all_yrs_mean_removed, axis=0)
-        # yr_2051_2060_pred_mean_removed = np.mean(yr_2051_2060_pred_with_all_yrs_mean_removed, axis=0)
-        # yr_2051_2060_pred_mean_removed_masked = np.ma.masked_where(np.isnan(yr_2051_2060_mean_removed), yr_2051_2060_pred_mean_removed)
-        #
-        # # eval.plot(yr_2051_2060_mean_removed, folder_saving, "model_2051-2060_same_y_axis", trend=True)
-        # # eval.plot(yr_2051_2060_pred_mean_removed_masked, folder_saving, "predictions_2051-2060_same_y_axis", trend=True)
-        # eval.plot(yr_2051_2060_mean_removed - yr_2051_2060_pred_mean_removed, folder_saving, "model-predictions_2051-2060_same_y_axis", trend=True)
 
         # # ## plot persistence
         y_persistence = y_train[-30*12:,:,:]
