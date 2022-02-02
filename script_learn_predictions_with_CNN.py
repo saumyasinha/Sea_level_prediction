@@ -1,5 +1,7 @@
 import os
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 from sklearn.model_selection import train_test_split
 # from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
@@ -8,7 +10,7 @@ from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
-path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
+path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
 path_project = path_cluster
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -32,8 +34,9 @@ test_end_year =  2070 #2020 #
 lead_years = 30
 quantile = False
 convlstm = True
-hidden_dim = 15
-num_layers=1
+hidden_dim = [1,16] #12
+num_layers=2
+kernel_size = [(5,5),(3,3)]
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 reg = "CNN"
@@ -42,7 +45,7 @@ reg = "CNN"
 
 # sub_reg = "cnn_with_1yr_lag_unet_w_patches_not_normalized"
 # sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_2layers_convlstm_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
@@ -53,7 +56,7 @@ downscaling = True
 
 
 
-batch_size = 4
+batch_size = 6
 epochs = 200
 lr = 1e-4
 
@@ -72,7 +75,7 @@ def main():
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
         weight_map = np.abs(weight_map)
         if downscaling:
-            weight_map = block_reduce(weight_map, (2,2), np.mean)
+            weight_map = block_reduce(weight_map, (2,2), np.mean) #(2,2)
         print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling)
@@ -152,8 +155,8 @@ def main():
 
         y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
         # y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()

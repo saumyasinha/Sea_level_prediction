@@ -19,7 +19,7 @@ def get_target_mask(y):
     y[np.isnan(y)] = 0
     return y, mask
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,kernel_size = kernel_size, n_predictions =1):
     valid = True
     outputs_quantile = len(alphas)
 
@@ -48,14 +48,14 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
                                            n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate,
                                            folder_saving, model_saved, quantile,
                                            alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile,
-                                           valid=valid, hidden_dim=hidden_dim, num_layers=num_layers, patience=1000)
+                                           valid=valid, hidden_dim=hidden_dim, num_layers=num_layers, kernel_size=kernel_size, patience=1000)
 
     loss_plots(train_loss, valid_loss, folder_saving, model_saved)
 
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, n_predictions = 1):
+def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, kernel_size=kernel_size,n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -80,7 +80,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
                                     hidden_dim=hidden_dim,
-                                    kernel_size=(3, 3),
+                                    kernel_size=kernel_size,
                                     num_layers=num_layers,
                                     batch_first=True,
                                     bias=True,
@@ -94,13 +94,27 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
 
     basic_forecaster.eval()
     
+    X_train = torch.from_numpy(X_train)
+    X_train = X_train.permute(0, 3, 1, 2)
+    if convlstm == True:
+        X_train = X_train[:, :, np.newaxis, :, :]
+
+    if convlstm == False:
+        y_train_pred = basic_forecaster.forward(X_train)
+    else:
+        last_states = basic_forecaster.forward(X_train)
+        y_train_pred = last_states[0][0]
+
+    y_train_pred = y_train_pred.cpu().detach().numpy()
+    np.save(folder_saving + "/" + "train_predictions.npy", y_train_pred)
+
     if X_test is not None:
     #    if torch.cuda.is_available():
      #       X_test = X_test.cuda()
         if convlstm == False:
             y_pred = basic_forecaster.forward(X_test)
         else:
-            _, last_states = basic_forecaster.forward(X_test)
+            last_states = basic_forecaster.forward(X_test)
             y_pred = last_states[0][0]  # 0 for layer index, 0 for h index
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
@@ -121,7 +135,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
         if convlstm == False:
             y_valid_pred = basic_forecaster.forward(X_valid)
         else:
-            _, last_states = basic_forecaster.forward(X_valid)
+            last_states = basic_forecaster.forward(X_valid)
             y_valid_pred = last_states[0][0]  # 0 for layer index, 0 for h index
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         # validLoss = MaskedMSELoss(y_valid_pred, y_valid, valid_mask)
