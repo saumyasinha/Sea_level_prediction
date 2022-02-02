@@ -1,28 +1,51 @@
 import numpy as np
 from math import sqrt
-# import netCDF4
+import netCDF4
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy.polynomial.polynomial as poly
-# import cartopy.crs as ccrs
-# from matplotlib.colors import TwoSlopeNorm, Normalize
+import cartopy.crs as ccrs
+from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
+from cartopy.util import add_cyclic_point
 
 
 
 def evaluation_metrics(pred, target, mask, weight_map):
-    weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
+
+    # weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
     diff = (target - pred)
+
     weighted_diff2 = (diff ** 2) * weight_map
+
+    # best_rmse_pt = np.unravel_index(np.nanargmin(weighted_diff2), weighted_diff2.shape)
+    # worse_rmse_pt = np.unravel_index(np.nanargmax(weighted_diff2), weighted_diff2.shape)
+    # print(best_rmse_pt, worse_rmse_pt)
+
     weighted_diff2 = weighted_diff2[mask] ## at this point I've lost the lat/long knowledge and the array is flattened
     weighted_diff = np.abs(diff) * weight_map
+    weighted_diff = weighted_diff[mask]
     weights_masked = weight_map[mask]
+
     # loss = weighted_diff2.mean()
+
     l2loss =weighted_diff2.sum() / weights_masked.sum()
     rmse = sqrt(l2loss)
 
     mae = weighted_diff.sum() / weights_masked.sum()
 
+    # if return_best_and_worst:
+    #     return rmse, mae, best_rmse_pt, worse_rmse_pt
+
     return rmse, mae
+
+
+def signaltonoise(a, axis=None):
+    # a = np.asanyarray(a)
+    m = a.mean(axis)
+    sd = a.std(axis=axis)
+    # return np.where(sd == 0, 0, m/sd)
+    return m/sd
 
 
 def fit_trend(pred, mask, yearly = False):
@@ -30,7 +53,7 @@ def fit_trend(pred, mask, yearly = False):
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    x = list(range(1991,2021))
+    x = list(range(2041,2071))
     mid_x = np.mean(x)
     x = np.asarray([i-mid_x for i in x])
 
@@ -86,18 +109,43 @@ def fit_trend(pred, mask, yearly = False):
 
     return fitted_coeff
 
-#
-# def plot_global_mean_sea_level(x,y,missing_val = 1e+36):
-#     y[y==missing_val] = 0
-#     global_mean = np.mean(y,axis=(1,2))
-#
-#     fig, ax = plt.subplots(1)
-#     ax.plot(x, global_mean)
-#     ax.set_xticks(x)
-#     ax.set_yticks(global_mean)
-#     plt.savefig("global_mean_trend_2001-2020")
-#     plt.close()
+def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
 
+    pred_i_j = pred[:,x_i_j,y_i_j]
+    print(pred_i_j.shape)
+    target_i_j = target[:,x_i_j,y_i_j]
+
+    n_years =len(years)
+    pred = []
+    i = 0
+    for yr in range(0, n_years):
+        # print(i)
+        annual_pred = np.mean(pred_i_j[i:i + 12])
+        pred.append(annual_pred)
+        i = i + 12
+
+    pred = np.stack(pred)
+
+    target = []
+    i = 0
+    for yr in range(0, n_years):
+        # print(i)
+        annual_pred = np.mean(target_i_j[i:i + 12])
+        target.append(annual_pred)
+        i = i + 12
+
+    target = np.stack(target)
+    print(pred.shape,target.shape)
+    # years = list(range(2051,2051))
+    fig = plt.figure()
+    ax = fig.subplots()
+    ax.plot(years, pred, color='r', label='prediction')
+    ax.plot(years, target, color='b', label='true')  # Original data points
+    ax.set_title('prediction at a single point')
+    ax.legend()
+
+
+    plt.savefig(folder_saving+"/single_point_test_wrt_trend_for_prediction_"+str(count))
 
 
 def plot(xr, folder_saving, save_file, trend =False, index = None):
@@ -145,28 +193,66 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
         print(np.min(zos), np.max(zos), zos.shape)
         zos = zos*1000
 
+
+        # print("signal to noise ratio: ", signaltonoise(zos))
+
+
     lats =dataset.variables['lat'][:]
     print(lats.shape)
     lats = block_reduce(lats, (2,), np.mean)
-    print(lats.min(), lats.max(), type(lats))
+    print(lats.min(), lats.max(), lats.shape)
     lons = dataset.variables['lon'][:]
     lons = block_reduce(lons, (2,), np.mean)
-    print(lons.min(), lons.max(), type(lons), lons.shape)
-    ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))
+    print(lons.min(), lons.max(), lons.shape)
+
+    zos, lons = add_cyclic_point(zos, coord=lons)
+
+    ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    v_min=-10
-    v_max=13
+    v_min=-0.25 #zos.min()
+    v_max=0.25#zos.max()
     levels = np.linspace(v_min, v_max, 60)
-    norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
-    plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels, norm=norm,
-                 transform=ccrs.PlateCarree())
+    # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
+    plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,
+                 transform=ccrs.PlateCarree(), extend = "both")  #norm=norm,
+    cbar = plt.colorbar()
+    # cbar.set_ticks(range(v_min, v_max + 1))
+
+    # least_squares_x = [281,183,279,215,181]
+    # least_squares_y = [-51,39,-47,37,39]
+    #
+    # highest_sqaures_x = [79,83,77,333,335]
+    # highest_sqaures_y = [-51,-51,-51,47,47]
+    #
+    # plt.scatter(least_squares_x, least_squares_y, color='blue', marker='o',
+    #      transform=ccrs.PlateCarree())
+    # plt.scatter(highest_sqaures_x, highest_sqaures_y, color='red', marker='o',
+    #          transform=ccrs.PlateCarree())
     # plt.clim(-0.004, 0.008)
     ax.coastlines()
-    plt.colorbar()
     plt.savefig(folder_saving+"/"+save_file)
     plt.close()
 
-
+# [140  19]
+# 281.0 -51.0
+# [91 64]
+# 183.0 39.0
+# [139  21]
+# 279.0 -47.0
+# [107  63]
+# 215.0 37.0
+# [90 64]
+# 181.0 39.0
+# [39 19]
+# 79.0 -51.0
+# [41 19]
+# 83.0 -51.0
+# [38 19]
+# 77.0 -51.0
+# [166  68]
+# 333.0 47.0
+# [167  68]
+# 335.0 47.0
 
 def combine_image_patches(y_w_patches):
 

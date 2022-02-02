@@ -22,7 +22,8 @@ def gz_extract(directory):
 
 
 def read_nc_files(path):
-    path_nc = path+"/npy_files/"
+    path_nc = path+"/nc_files/"
+    path_npy = path+"/npy_files/"
 
     for filename in os.listdir(path_nc):
         if filename.endswith(".nc"):
@@ -33,12 +34,12 @@ def read_nc_files(path):
             for var in nc.variables.values():
                 print(var)
 
-            zos = np.array(nc.variables['zos'][:])  #cesm-SSH
+            zos = np.array(nc.variables['heatfull'][:])  #cesm-SSH
             print(zos.shape)
             zos = np.transpose(zos)
             print(zos.shape, np.min(zos), np.max(zos))
             # print(zos[:5, :5, :5])
-            np.save(path_nc + filename[:-7] + '.npy', zos)
+            np.save(path_npy + filename[:-7] + '.npy', zos)
 
             os.remove(path_nc + filename)
 
@@ -67,28 +68,35 @@ def read_binary_files(path):
 def get_weights_perpixel(path):
 
     path_nc = path+"/nc_files/"
+    print(path_nc)
     for filename in os.listdir(path_nc):
         if filename.endswith(".nc"):
             fp = path_nc + filename
             nc = netCDF4.Dataset(fp)
 
             lats = np.array(nc.variables['lat'][:])
+            lon = np.array(nc.variables['lon'][:])
+
+            np.save(path_nc+"latitudes.npy",lats)
+            np.save(path_nc + "longitudes.npy", lon)
+            print(lats.shape, lon.shape)
             for var in nc.variables.values():
                 print(var)
 
-            weights_per_lat = np.cos(lats)
-            # norm_weights = weights_per_lat/weights_per_lat.sum()
 
-            weight_map = np.full((360,180),0.0)
-            for i in range(180):
-                weight_map[:,i] = weights_per_lat[i]
-            print(weight_map.shape)
-            print(weight_map[0,0], weight_map[1,0], weights_per_lat[0])
-            # print(np.max(weights), np.min(weights))
-            # norm_weights = weights/weights.sum()
-            # print(np.max(norm_weights), np.min(norm_weights))
-
-            np.save(path +"/npy_files/weights_" + filename[:-7] + '.npy', weight_map)
+            # weights_per_lat = np.cos(lats)
+            # # norm_weights = weights_per_lat/weights_per_lat.sum()
+            #
+            # weight_map = np.full((360,180),0.0)
+            # for i in range(180):
+            #     weight_map[:,i] = weights_per_lat[i]
+            # print(weight_map.shape)
+            # print(weight_map[0,0], weight_map[1,0], weights_per_lat[0])
+            # # print(np.max(weights), np.min(weights))
+            # # norm_weights = weights/weights.sum()
+            # # print(np.max(norm_weights), np.min(norm_weights))
+            #
+            # np.save(path +"/npy_files/weights_" + filename[:-7] + '.npy', weight_map)
 
             break
 
@@ -98,7 +106,7 @@ def main():
     path_sealevel_folder = path_data_fr + "zos/"
     path_heatcontent_folder = path_data_fr + "heatfull/"
 
-    path_folder = path_sealevel_folder
+    path_folder =  path_heatcontent_folder #path_sealevel_folder
 
     historical_path = path_folder + "1850-2014/"
     future_path = path_folder + "2015-2100/"
@@ -108,11 +116,11 @@ def main():
     #
     # # read_binary_files(historical_path)
     # # read_binary_files(future_path)
-    #
-    # read_nc_files(historical_path)
-    # read_nc_files(future_path)
 
-    get_weights_perpixel(historical_path)
+    read_nc_files(historical_path)
+    read_nc_files(future_path)
+
+    # get_weights_perpixel(historical_path)
 
 
 

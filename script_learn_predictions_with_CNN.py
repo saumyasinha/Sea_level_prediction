@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from math import sqrt
 from sklearn.model_selection import train_test_split
 # from Sea_level_prediction.ModuleLearning import preprocessing,eval
 # from Sea_level_prediction.ModuleLearning.ModuleCNN import train as train_cnn
@@ -9,7 +10,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
@@ -24,15 +25,18 @@ path_folder = path_sealevel_folder
 historical_path = path_folder + "1850-2014/npy_files/"
 future_path = path_folder + "2015-2100/npy_files/"
 
+historical_heat_path = path_heatcontent_folder + "1850-2014/npy_files/"
+future_heat_path = path_heatcontent_folder + "2015-2100/npy_files/"
+
 train_start_year = 1930 # 1880 #
-train_end_year =  2040 #1990 #
-test_start_year =  2041 #1991
-test_end_year =  2070 #2020 #
+train_end_year = 2040 #1990 #
+test_start_year = 2041 #1991
+test_end_year = 2070 #2020 #
 
 lead_years = 30
 quantile = False
-convlstm = True
-hidden_dim = 15
+convlstm = False
+hidden_dim = 12
 num_layers=1
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
@@ -41,21 +45,25 @@ reg = "CNN"
 
 
 # sub_reg = "cnn_with_1yr_lag_unet_w_patches_not_normalized"
-# sub_reg = "cnn_with_1yr_lag_unet_with_patches_weighted_changed_years_not_normalized"
 sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
+# sub_reg = "cnn_with_1yr_lag_unet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12 #12
-yearly = False
-downscaling = True
+n_prev_months = 12
+yearly = False  #in case you want to look at year level data instead of month level
+downscaling = True #converting 360*180 to 180*90
+include_heat = False #include the heat content feature
+
+if include_heat:
+    features.extend(["heat_content"])
 
 
-
-batch_size = 4
-epochs = 200
+batch_size = 6
+epochs = 1
 lr = 1e-4
+
 
 
 
@@ -69,6 +77,7 @@ def main():
 
         f = open(folder_saving +"/results.txt", 'a')
 
+        ## these weights are cosine of latitude, used for weighted RMSE as a loss function
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
         weight_map = np.abs(weight_map)
         if downscaling:
@@ -79,10 +88,32 @@ def main():
         # np.save(path_data_fr+ model + "/"+"train_for_"+str(train_start_year)+"-"+str(train_end_year)+".npy", train)
         # np.save(path_data_fr+ model + "/"+"test_for_" + str(test_start_year) + "-" + str(test_end_year) + ".npy", test)
 
+        ## converting cms to meters
         train = train / 100
         test = test / 100
 
+        ## bulding the X,y dataset by assigning the predictions for every t
         X_train, y_train, X_test, y_test = preprocessing.create_labels(train, test, lead_years,n_prev_months)
+
+        if include_heat:
+            train_heat, test_heat = preprocessing.create_train_test_split(model, historical_heat_path, future_heat_path,
+                                                                          train_start_year,
+                                                                          train_end_year, test_start_year,
+                                                                          test_end_year,
+                                                                          n_prev_months, lead_years, downscaling, heat=True)
+
+            train_heat = train_heat / 100
+            test_heat = test_heat / 100
+
+            print("max of heat",np.max(train_heat), np.max(test_heat))
+
+            X_train_heat, y_train_heat, X_test_heat, y_test_heat = preprocessing.create_labels(train_heat, test_heat, lead_years, n_prev_months)
+
+            X_train = np.stack([X_train, X_train_heat], axis=3)
+            X_test = np.stack([X_test, X_test_heat], axis=3)
+
+            print("if including heat: ", X_train.shape, X_test.shape)
+
 
         ## splitting train into train+valid
         split_index = 30 if yearly else 12*30
@@ -100,14 +131,15 @@ def main():
         X_test = preprocessing.remove_land_values(X_test)
 
         ## add previous timestep values
-        X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
-        X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times)
+        X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times, include_heat)
+        X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times, include_heat)
 
         y_train = y_train[:,:,n_prev_times:]
         y_test = y_test[:,:,n_prev_times:]
 
         y_train = np.transpose(y_train, (2,0,1)) #y_train.reshape(-1,lon,lat)
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)
+
 
         print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
         print(np.max(X_train),np.max(y_train))
@@ -116,7 +148,7 @@ def main():
         #     X_train, y_train, test_size=0.2, random_state=42)
 
 
-        train_valid_split_index = len(X_train) - split_index #2*120 #keeping later 10 years for validation
+        train_valid_split_index = len(X_train) - split_index #keeping later 30 years for validation
         X,y = X_train,y_train
         X_train = X[:train_valid_split_index]
         y_train = y[:train_valid_split_index]
@@ -148,88 +180,121 @@ def main():
 
 
 
-        model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-
-        y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
-        # y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
-        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        # model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
+        #
+        # y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
+        # # y_valid_copy = y_valid.copy()
+        # train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
+        # valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas,convlstm=convlstm, hidden_dim = hidden_dim, num_layers = num_layers)
+        # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
-        #
-        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
+
+
+        #####Visualizations####################
+        #### get trend plots######
+        y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
         # print(y_valid_pred.shape)
-        #
-        # # #
-        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # eval.plot(valid_trend, folder_saving, "valid_trend_1991-2020_same_yaxis", trend=True)
-        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # eval.plot(model_trend, folder_saving, "model_trend_1991-2020_same_y_axis", trend=True)
-        # eval.plot(model_trend - valid_trend, folder_saving, "diff_trend_1991-2020_same_y_axis", trend=True)
 
-        # # # #
-        # # yr_JAN2014 = y_valid[-7*12]
-        # # yr_JAN2014_pred = y_valid_pred[-7*12]
-        # # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla", index = -12)
-        # # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla", index = -12)
-        # # eval.plot(yr_JAN2014 - yr_JAN2014_pred, folder_saving, "model-predicted_JAN2014_sla", index=-12)
+        y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        # # # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
+        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        # # # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
+        # diff = model_trend - valid_trend
+        # # eval.plot(diff, folder_saving, "diff_trend_2041-2070_same_y_axis", trend=True)
+        # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+        # # # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map)
+
+        # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
+
+
+        ### plot true vs predicitons on best/worst rmse pts
+        # mean_for_valid_period = np.mean(y_valid, axis=0)
+        # y_valid_mean_removed = y_valid - mean_for_valid_period[np.newaxis, :, :]
+        # mean_pred_for_valid_pred = np.mean(y_valid_pred, axis=0)
+        # y_valid_pred_mean_removed = y_valid_pred - mean_pred_for_valid_pred[np.newaxis, :, :]
         # #
-        # # yr_DEC2014 = y_valid[(-7 * 12) +11]
-        # # yr_DEC2014_pred = y_valid_pred[(-7 * 12) +11]
-        # # eval.plot(yr_DEC2014, folder_saving, "model_DEC2014_sla", index = -1)
-        # # eval.plot(yr_DEC2014_pred, folder_saving, "predicted_DEC2014_sla", index = -1)
-        # # eval.plot(yr_DEC2014 - yr_DEC2014_pred, folder_saving, "model-predicted_DEC2014_sla", index=-1)
-        # #
-        # # yr_JAN2010 = y_valid[-11 * 12]
-        # # yr_JAN2010_pred = y_valid_pred[-11 * 12]
-        # # eval.plot(yr_JAN2010, folder_saving, "model_JAN2010_sla", index = -5*12)
-        # # eval.plot(yr_JAN2010_pred, folder_saving, "predicted_JAN2010_sla", index = -5*12)
-        # # eval.plot(yr_JAN2010 - yr_JAN2010_pred, folder_saving, "model-predicted_JAN2010_sla", index=-5 * 12)
+        # # # y_valid_mean = np.mean(y_valid, axis=0)
+        # # # # print(np.isnan(y_valid_mean).sum())
+        # # # # y_valid_pred_mean = np.mean(y_valid_pred, axis=0)
+        # # # # weighted_diff2 = ((y_valid_mean - y_valid_pred_mean)**2) * weight_map
+        # weighted_diff2 = (diff**2)*weight_map
+        # weighted_diff2 = np.ma.masked_where(np.isnan(weighted_diff2), weighted_diff2)
         #
-        # # yr_DEC2010 = y_valid[(-11 * 12) + 11]
-        # # yr_DEC2010_pred = y_valid_pred[(-11 * 12) + 11]
-        # # # eval.plot(yr_DEC2010, folder_saving, "model_DEC2010_sla", index = (-5*12)+11)
-        # # # eval.plot(yr_DEC2010_pred, folder_saving, "predicted_DEC2010_sla", index = (-5*12)+11)
-        # # eval.plot(yr_DEC2010 - yr_DEC2010_pred, folder_saving, "model-predicted_DEC2010_sla", index=(-5 * 12) + 11)
-        # # #
-        # # yr_JAN2004 = y_valid[-17 * 12]
-        # # yr_JAN2004_pred = y_valid_pred[-17 * 12]
-        # # # eval.plot(yr_JAN2004, folder_saving, "model_JAN2004_sla", index = -11*12)
-        # # # eval.plot(yr_JAN2004_pred, folder_saving, "predicted_JAN2004_sla", index = -11*12)
-        # # eval.plot(yr_JAN2004 - yr_JAN2004_pred, folder_saving, "model-predicted_JAN2004_sla", index=-11 * 12)
-        # #
-        # # # yr_DEC2004 = y_valid[(-17 * 12)+11]
-        # # # yr_DEC2004_pred = y_valid_pred[(-17 * 12)+11]
-        # # # eval.plot(yr_DEC2004, folder_saving, "model_DEC2004_sla", index = (-11*12)+11)
-        # # # eval.plot(yr_DEC2004_pred, folder_saving, "predicted_DEC2004_sla", index =  (-11*12)+11)
-        # # # eval.plot(yr_DEC2004 - yr_DEC2004_pred, folder_saving, "model-predicted_DEC2004_sla", index=(-11 * 12) + 11)
-        # # #
-        # # yr_JAN1994 = y_valid[-27 * 12]
-        # # yr_JAN1994_pred = y_valid_pred[-27 * 12]
-        # # # eval.plot(yr_JAN1994, folder_saving, "model_JAN1994_sla", index = -21*12)
-        # # # eval.plot(yr_JAN1994_pred, folder_saving, "predicted_JAN1994_sla", index = -21*12)
-        # # eval.plot(yr_JAN1994 - yr_JAN1994_pred, folder_saving, "model-predicted_JAN1994_sla", index=-21 * 12)
+        # sorted_points_wrt_error = np.dstack(np.unravel_index(weighted_diff2.argsort(axis=None), weighted_diff2.shape))
+        # print(sorted_points_wrt_error, sorted_points_wrt_error.shape)
+        #
+        # # print(np.unravel_index(np.nanargmin(weighted_diff2), weighted_diff2.shape), np.unravel_index(np.nanargmax(weighted_diff2),weighted_diff2.shape))
+        # best_counter = 0
+        # worst_counter = -1
+        # count=0
+        # lats = np.load(historical_path+"/latitudes.npy")
+        # lats = block_reduce(lats, (2,), np.mean)
+        # lons = np.load(historical_path + "/longitudes.npy")
+        # lons = block_reduce(lons, (2,), np.mean)
+        #
+        # while count<10:
+        #     if count<5:
+        #         pt = sorted_points_wrt_error[0,best_counter,:]
+        #         best_counter = best_counter + 1
+        #         if ~np.isnan(np.sum(y_valid_mean_removed[:,pt[0],pt[1]])):
+        #             print(pt)
+        #             print(lons[pt[0]],lats[pt[1]])
+        #             eval.single_point_test(pt[0], pt[1], y_valid_pred_mean_removed, y_valid_mean_removed, years = list(range(2041,2071)), count=count, folder_saving=folder_saving)
+        #             count=count+1
         #
         #
+        #     else:
+        #         pt = sorted_points_wrt_error[0,worst_counter,:]
+        #         worst_counter = worst_counter-1
+        #         if ~np.isnan(np.sum(y_valid_mean_removed[:,pt[0],pt[1]])):
+        #             print(pt)
+        #             print(lons[pt[0]], lats[pt[1]])
+        #             eval.single_point_test(pt[0], pt[1], y_valid_pred_mean_removed, y_valid_mean_removed, years = list(range(2041,2071)), count=count, folder_saving=folder_saving)
+        #             count=count+1
+
+
+        # y_valid_pred_mean_masked = np.ma.masked_where(np.isnan(y_valid_mean), y_valid_pred_mean)
+        # eval.plot(y_valid_mean, folder_saving, "model_2041-2070_same_y_axis", trend=True)
+        # eval.plot(y_valid_pred_mean_masked, folder_saving, "predictions_2041-2070_same_y_axis", trend=True)
+        # eval.plot(y_valid_mean - y_valid_pred_mean, folder_saving, "model-predictions_2041-2070_same_y_axis", trend=True)
+
+
         # #year-averaged-plots
-        # # yr_2011_2020 = np.mean(y_valid[-10*12:, :, :], axis=0)
-        # # yr_2011_2020_pred = np.mean(y_valid_pred[-10*12: , :, :], axis=0)
-        # # # eval.plot(yr_JAN2014,folder_saving, "model_JAN2014_sla", index = -12)
-        # # # eval.plot(yr_JAN2014_pred, folder_saving,"predicted_JAN2014_sla", index = -12)
-        # # eval.plot(yr_2011_2020 - yr_2011_2020_pred, folder_saving, "model-predicted_2011_2020_sla", trend=True)
-        # #
-        # #
+        # yr_2051_2060_with_all_yrs = y_valid[-20*12:-10*12, :, :]
+        # mean_2051_2060 = np.nanmean(yr_2051_2060_with_all_yrs)
+        # yr_2051_2060_with_all_yrs_mean_removed = yr_2051_2060_with_all_yrs - mean_2051_2060
         #
-        # ## plot persistence
-        # y_persistence = y_train[-30*12:,:,:] ##1961-1990
-        # persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly)
-        # eval.plot(persistence_trend, folder_saving, "persistence_trend_1991-2020_same_yaxis", trend=True)
-        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # # eval.plot(model_trend, folder_saving, "model_trend_1991-2020_same_y_axis", trend=True)
-        # eval.plot(model_trend - persistence_trend, folder_saving, "diff_w_persis_trend_1991-2020_same_y_axis", trend=True)
+        # yr_2051_2060_pred_with_all_yrs = y_valid_pred[-20 * 12:-10 * 12, :, :]
+        # yr_2051_2060_pred_with_all_yrs_mean_removed = yr_2051_2060_pred_with_all_yrs - mean_2051_2060
+        #
+        # rmse_for_decade, mae_for_decade = eval.evaluation_metrics(yr_2051_2060_pred_with_all_yrs,yr_2051_2060_with_all_yrs, mask = ~np.isnan(yr_2051_2060_with_all_yrs), weight_map = weight_map)
+        #
+        # print("rmse for the decade 2051-2060: ", rmse_for_decade)
+        #
+        # yr_2051_2060_mean_removed = np.mean(yr_2051_2060_with_all_yrs_mean_removed, axis=0)
+        # yr_2051_2060_pred_mean_removed = np.mean(yr_2051_2060_pred_with_all_yrs_mean_removed, axis=0)
+        # yr_2051_2060_pred_mean_removed_masked = np.ma.masked_where(np.isnan(yr_2051_2060_mean_removed), yr_2051_2060_pred_mean_removed)
+        #
+        # # eval.plot(yr_2051_2060_mean_removed, folder_saving, "model_2051-2060_same_y_axis", trend=True)
+        # # eval.plot(yr_2051_2060_pred_mean_removed_masked, folder_saving, "predictions_2051-2060_same_y_axis", trend=True)
+        # eval.plot(yr_2051_2060_mean_removed - yr_2051_2060_pred_mean_removed, folder_saving, "model-predictions_2051-2060_same_y_axis", trend=True)
 
+        # # ## plot persistence
+        y_persistence = y_train[-30*12:,:,:]
+        persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly)
+        # eval.plot(persistence_trend, folder_saving, "persistence_trend_2041-2070_same_yaxis", trend=True)
+        model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        eval.plot(valid_trend - persistence_trend, folder_saving, "diff_ml_and_persis_trend_2041-2070_same_y_axis", trend=True)
+
+        # persistence_rmse, persistence_mae = eval.evaluation_metrics(model_trend*1000, persistence_trend*1000, mask = ~np.isnan(persistence_trend), weight_map=weight_map)
+        # #
+        # print("persistence trend rmse, mae: ",persistence_rmse, persistence_mae)
+        # # persistence trend rmse, mae: 0.6830641514406547 , 0.47213281289195413
+        #persistence model (and not trend) rmse, mae:  0.0363006390941568 0.026479292738289497
 
 if __name__=='__main__':
     main()
+
+

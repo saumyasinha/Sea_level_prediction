@@ -222,7 +222,7 @@ class ConvLSTM(nn.Module):
             # layer_output_list = layer_output_list[-1:]
             last_state_list = last_state_list[-1:]
 
-        return _, last_state_list
+        return last_state_list
 
     def _init_hidden(self, batch_size, image_size):
         init_states = []
@@ -302,7 +302,7 @@ def trainBatchwise(trainX, trainY, validX,
             if train_on_gpu:
                 xx, yy, batch_weight_map = xx.cuda(), yy.cuda(), batch_weight_map.cuda()
 
-            _, last_states = basic_forecaster.forward(xx)
+            last_states = basic_forecaster.forward(xx)
             outputs = last_states[0][0]  # 0 for layer index, 0 for h index
             # print(outputs.shape, type(outputs))
             optimizer.zero_grad()
@@ -331,9 +331,9 @@ def trainBatchwise(trainX, trainY, validX,
             if train_on_gpu:
                 validX, validY, weight_map_valid = validX.cuda(), validY.cuda(), weight_map_valid.cuda()
 
-            _, last_states = basic_forecaster.forward(validX)
+            last_states = basic_forecaster.forward(validX)
             validYPred = last_states[0][0]  # 0 for layer index, 0 for h index
-            print(validYPred.shape, type(validYPred))
+            # print(validYPred.shape, type(validYPred))
 
             if quantile:
                 # validYPred = basic_forecaster.forward(validX)

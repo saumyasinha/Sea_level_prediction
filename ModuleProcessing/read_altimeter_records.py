@@ -33,31 +33,37 @@ path_data_obs = path_data + "Observations/"
 
 
 
-def remove_land_values(xr):
-
-    print(np.max(xr), np.min(xr))
-    missing_val = -2147483648
-    xr[xr == missing_val] = 0
-    print(np.max(xr),np.min(xr), np.isnan(xr).sum())
-    return xr
+# def remove_land_values(xr):
+#
+#     print(np.max(xr), np.min(xr))
+#     missing_val = -2147483648
+#     xr[xr == missing_val] = 0
+#     print(np.max(xr),np.min(xr), np.isnan(xr).sum())
+#     return xr
 
 
 def read_nc_files(path_data_obs,year):
     obs_stacked_array = []
-    yearfile = path_data_obs + year + "/"
-    for monthfile in os.listdir(yearfile):
-        if not monthfile.startswith('.'):
-            print(monthfile)
-            fp = yearfile + monthfile
-            nc = netCDF4.Dataset(fp)
-            #
-            # for var in nc.variables.values():
-            #     print(var)
+    yearfile = path_data_obs + str(year) + "/"
+    monthlist = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+    if year == 2020:
+        monthlist = ["01", "02", "03", "04", "05"]
+    month_file_list = ["dt_global_allsat_msla_h_y"+str(year)+"_m"+month+".nc" for month in monthlist]
 
-            sla = np.array(nc.variables['sla'][:])  # type(nc.variables))
-            print(sla.shape)
 
-            obs_stacked_array.append(sla)
+    for monthfile in month_file_list:
+        # if not monthfile.startswith('.'):
+        print(monthfile)
+        fp = yearfile + monthfile
+        nc = netCDF4.Dataset(fp)
+        #
+        for var in nc.variables.values():
+            print(var)
+
+        sla = np.array(nc.variables['sla'][:])  # type(nc.variables))
+        print(sla.shape)
+
+        obs_stacked_array.append(sla)
 
     print(len(obs_stacked_array))
     obs_stacked_array = np.concatenate(obs_stacked_array)
@@ -69,18 +75,19 @@ def read_nc_files(path_data_obs,year):
 def main():
 
     total_obs_array = []
-    for year in os.listdir(path_data_obs):
-        if not year.startswith('.') and not year.endswith('.npy'):
-            print(year)
-            year_array = read_nc_files(path_data_obs,year)
-            print(year_array.shape)
-            total_obs_array.append(year_array)
+    years = list(range(1993,1994))
+    for year in years:
+        # if not year.startswith('.') and not year.endswith('.npy'):
+        print(year)
+        year_array = read_nc_files(path_data_obs,year)
+        print(year_array.shape)
+        total_obs_array.append(year_array)
 
     total_obs_array = np.concatenate(total_obs_array)
     print(total_obs_array.shape)
 
-    xr = remove_land_values(total_obs_array)
-    np.save(path_data_obs + 'observations.npy', xr)
+    # xr = remove_land_values(total_obs_array)
+    # np.save(path_data_obs + 'observations.npy', total_obs_array)
 
 if __name__=='__main__':
     main()

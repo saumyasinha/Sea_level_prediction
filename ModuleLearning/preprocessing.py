@@ -11,18 +11,25 @@ def remove_land_values(xr):
     return xr
 
 
-def include_prev_timesteps(X, n_timesteps):
+def include_prev_timesteps(X, n_timesteps, include_heat):
+
 
     X = np.expand_dims(X, axis=2)
+
     X_with_prev_timesteps = []
     n_months = X.shape[3]
     for i in range(n_timesteps,n_months):
         prev_list =[]
         for j in range(n_timesteps,0,-1):
-            prev = X[:,:,:,i-j]
+            prev = X[:, :, :, i - j]
+            if include_heat:
+                prev = X[:, :, :, i - j, :]
+
             prev_list.append(prev)
 
         curr = X[:,:,:,i]
+        if include_heat:
+            curr = X[:, :, :, i, :]
         prev_list.append(curr)
         temp = np.concatenate(prev_list, axis=2)
         X_with_prev_timesteps.append(temp)
@@ -57,7 +64,7 @@ def year_start_index(year):
     idx = (year - 1850) * 12
     return idx
 
-def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling=False):
+def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling=False, heat=False):
 
     '''
     if train_start_year = 1900, train_end_year = 1990,
@@ -66,10 +73,14 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     then this function returns train: 1899 - 1990, test: 1990 - 2050
     '''
     historical_filename = path_1850_to_2014 + "historical_"+model+"_zos_fr_1850_2014.npy"
+    if heat:
+        historical_filename = path_1850_to_2014 + "historical_" + model + "_heatfull_fr_1850_2014.npy"
     historical_array = np.load(historical_filename)
     print(historical_array.shape)
 
     future_filename = path_2015_to_2100 + "rcp85_" + model + "_zos_fr_2015_2100.npy" #ssp370/rcp85
+    if heat:
+        future_filename = path_2015_to_2100 + "rcp85_" + model + "_heatfull_fr_2015_2100.npy"
     future_array = np.load(future_filename)
     print(future_array.shape)
 

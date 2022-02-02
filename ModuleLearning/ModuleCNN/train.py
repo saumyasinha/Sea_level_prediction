@@ -16,10 +16,11 @@ def get_target_mask(y):
     mask = ~np.isnan(y)#(y != missing_val)
     print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
-    y[np.isnan(y)] = 0
-    return y, mask
+    y_copy = y.copy()
+    y_copy[np.isnan(y_copy)] = 0
+    return y_copy, mask
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,n_predictions =1):
     valid = True
     outputs_quantile = len(alphas)
 
@@ -29,18 +30,38 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
     X_train, y_train, train_mask, weight_map_train = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask), torch.from_numpy(weight_map_train)
     X_valid, y_valid, valid_mask, weight_map_valid = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask), torch.from_numpy(weight_map_valid)
 
-    X_train = X_train.permute(0, 3, 1, 2)
-    X_valid = X_valid.permute(0, 3, 1, 2)
+    if include_heat is False:
+        print(X_train.shape)
+        X_train = X_train.permute(0, 3, 1, 2)
+        print(X_train.shape)
+        X_valid = X_valid.permute(0, 3, 1, 2)
+
+    else:
+        print(X_train.shape)
+        X_train = X_train.permute(0, 3, 4, 1, 2)
+        print(X_train.shape)
+        X_valid = X_valid.permute(0, 3, 4, 1, 2)
 
     if convlstm==False:
 
+        if include_heat:
+            current_heat_train = X_train[:,-1,1,:,:]
+            X_train_reduced = X_train[:,:,0,:,:]
+            X_train = np.concatenate([X_train_reduced, current_heat_train[:,np.newaxis,:,:]], axis=1)
+
+            current_heat_valid = X_valid[:, -1, 1, :, :]
+            X_valid_reduced = X_valid[:, :, 0, :, :]
+            X_valid = np.concatenate([X_valid_reduced, current_heat_valid[:, np.newaxis, :, :]], axis=1)
+
+            print(X_train.shape, X_valid.shape)
         train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 
     else:
-        X_train = X_train[:,:,np.newaxis,:,:]
-        X_valid = X_valid[:, :, np.newaxis, :, :]
+        if include_heat is False:
+            X_train = X_train[:,:,np.newaxis,:,:]
+            X_valid = X_valid[:, :, np.newaxis, :, :]
 
         print(X_train.shape)
 
@@ -55,7 +76,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, n_predictions = 1):
+def basic_CNN_test(X_train,X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -93,14 +114,29 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
     basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
 
     basic_forecaster.eval()
-    
+
+    X_train = torch.from_numpy(X_train)
+    X_train = X_train.permute(0, 3, 1, 2)
+    if convlstm == True:
+        X_train = X_train[:, :, np.newaxis, :, :]
+
+    if convlstm == False:
+        y_train_pred = basic_forecaster.forward(X_train)
+    else:
+        last_states = basic_forecaster.forward(X_train)
+        y_train_pred = last_states[0][0]
+
+    y_train_pred = y_train_pred.cpu().detach().numpy()
+    np.save(folder_saving + "/" + "train_predictions.npy", y_train_pred)
+
+
     if X_test is not None:
     #    if torch.cuda.is_available():
      #       X_test = X_test.cuda()
         if convlstm == False:
             y_pred = basic_forecaster.forward(X_test)
         else:
-            _, last_states = basic_forecaster.forward(X_test)
+            last_states = basic_forecaster.forward(X_test)
             y_pred = last_states[0][0]  # 0 for layer index, 0 for h index
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         y_pred = y_pred.cpu().detach().numpy()
@@ -121,7 +157,7 @@ def basic_CNN_test(X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_fe
         if convlstm == False:
             y_valid_pred = basic_forecaster.forward(X_valid)
         else:
-            _, last_states = basic_forecaster.forward(X_valid)
+            last_states = basic_forecaster.forward(X_valid)
             y_valid_pred = last_states[0][0]  # 0 for layer index, 0 for h index
         # testLoss = MaskedMSELoss(y_pred, y_test, test_mask)
         # validLoss = MaskedMSELoss(y_valid_pred, y_valid, valid_mask)
