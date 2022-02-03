@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from ModuleLearning.ModuleCNN.unet_helpers import DoubleConvDS,UpDS,DownDS,OutConv,CBAM
 
 
 
@@ -20,7 +21,7 @@ class UNet(nn.Module):
         super().__init__()
 
 
-        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (3,4), padding_1 = (1,1), kernel_2 = (3,4), padding_2 = (1,1)) # kernel1changed from 4,3 to 3,4 and kernel 2 from 4,4 to 3,4 when downsampled image         #88x44
+        self.dconv_down1 = double_conv(dim_channels, 16, kernel_1 = (3,4), padding_1 = (1,1), kernel_2 = (3,4), padding_2 = (1,1)) # kernel1changed from 4,3 to 3,4 and kernel 2 from 4,4 to 3,4 when downsampled image #88x44
         self.dconv_down2 = double_conv(16, 32,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #44*22
         self.dconv_down3 = double_conv(32, 64,  kernel_1 = (3,3), padding_1 = (1,1), kernel_2 = (3,3), padding_2 = (1,1)) #22*11
         #self.dconv_down4 = double_conv(256, 512,  kernel = (3,3), padding = (1,1))
@@ -33,57 +34,8 @@ class UNet(nn.Module):
 
         self.conv_last = nn.Conv2d(16, last_channel_size, 1)
 
-        # self.dconv_down1 = double_conv(dim_channels, 16, kernel_1=(5, 3), kernel_2=(5, 3), padding_1=(0, 0), padding_2=(0, 0))
-        # self.dconv_down2 = double_conv(16, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # self.dconv_down3 = double_conv(32, 64, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # # self.dconv_down4 = double_conv(256, 512, kernel=(3, 3), padding=(1, 1))
-        #
-        # self.maxpool = nn.MaxPool2d(4)
-        # self.upsample = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
-        #
-        # # self.dconv_up3 = double_conv(256 + 512, 256, kernel=(3, 3), padding=(1, 1))
-        # self.dconv_up2 = double_conv(32 + 64, 32, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(1, 1), padding_2=(1, 1))
-        # self.dconv_up1 = double_conv(16 + 32, 16, kernel_1=(3, 3), kernel_2=(3, 3), padding_1=(3, 2), padding_2=(3, 2))
-        #
-        # self.conv_last = nn.Conv2d(16, last_channel_size, 1)
-
 
     def forward(self, x):
-        # conv1 = self.dconv_down1(x)
-        # #print("down1",conv1.shape)
-        # x = self.maxpool(conv1)
-        # #print("maxpool",x.shape)
-        # conv2 = self.dconv_down2(x)
-        # #print("down2", conv2.shape)
-        # x = self.maxpool(conv2)
-        # #print("maxpool",x.shape)
-        # conv3 = self.dconv_down3(x)
-        # #print("down3", conv3.shape)
-        # x = self.maxpool(conv3)
-        # #print("maxpool",x.shape)
-        # x = self.dconv_down4(x)
-        # #print("down4",x.shape)
-        # x = self.upsample(x)
-        # #print("upsample", x.shape)
-        # x = torch.cat([x, conv3], dim=1)
-        # #print("concat",x.shape)
-        # x = self.dconv_up3(x)
-        # #print("up3", x.shape)
-        # x = self.upsample(x)
-        # #print("upsample", x.shape)
-        # x = torch.cat([x, conv2], dim=1)
-        # #print("concat",x.shape)
-        # x = self.dconv_up2(x)
-        # #print("up2", x.shape)
-        # x = self.upsample(x)
-        # #print("upsample", x.shape)
-        # x = torch.cat([x, conv1], dim=1)
-        # #print("concat",x.shape)
-        # x = self.dconv_up1(x)
-        # #print("up1", x.shape)
-        # out = self.conv_last(x)
-        # #print("conv last",out.shape)
-        # return out
         conv1 = self.dconv_down1(x)
         #print("down1",conv1.shape)
         x = self.maxpool(conv1)
@@ -120,3 +72,74 @@ class UNet(nn.Module):
         out = self.conv_last(x)
         #print("conv last",out.shape)
         return out
+
+
+
+
+class SmaAt_UNet_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1, kernels_per_layer=2, bilinear=True, reduction_ratio=16):
+        super(SmaAt_UNet_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        kernels_per_layer = kernels_per_layer
+        self.bilinear = bilinear
+        reduction_ratio = reduction_ratio
+
+        factor = 2 if self.bilinear else 1
+
+        self.inc = DoubleConvDS(self.n_channels, 64, kernels_per_layer=kernels_per_layer)
+        self.cbam1 = CBAM(64, reduction_ratio=reduction_ratio)
+        self.down1 = DownDS(64, 128, kernels_per_layer=kernels_per_layer)
+        self.cbam2 = CBAM(128, reduction_ratio=reduction_ratio)
+        self.down2 = DownDS(128, 256 // factor, kernels_per_layer=kernels_per_layer)
+        self.cbam3 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
+        # self.down3 = DownDS(256, 512, kernels_per_layer=kernels_per_layer)
+        # self.cbam4 = CBAM(512, reduction_ratio=reduction_ratio)
+        # self.down4 = DownDS(512, 1024 // factor, kernels_per_layer=kernels_per_layer)
+        # self.cbam5 = CBAM(1024 // factor, reduction_ratio=reduction_ratio)
+        self.up1 = UpDS(256, 128 // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
+        self.up2 = UpDS(128, 64 , self.bilinear, kernels_per_layer=kernels_per_layer)
+        # self.up3 = UpDS(256, 128 // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
+        # self.up4 = UpDS(128, 64, self.bilinear, kernels_per_layer=kernels_per_layer)
+
+        self.outc = OutConv(64, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        # print(x1.shape)
+        x1Att = self.cbam1(x1)
+        # print(x1Att.shape)
+        x2 = self.down1(x1)
+        # print(x2.shape)
+        x2Att = self.cbam2(x2)
+        # print(x2Att.shape)
+        x3 = self.down2(x2)
+        # print(x3.shape)
+        x3Att = self.cbam3(x3)
+        # print(x3Att.shape)
+        # x4 = self.down3(x3)
+        # print(x4.shape)
+        # x4Att = self.cbam4(x4)
+        # print(x4Att.shape)
+        # x5 = self.down4(x4)
+        # print(x5.shape)
+        # x5Att = self.cbam5(x5)
+        # print(x5Att.shape)
+        # x = self.up1(x5Att, x4Att)
+        # print(x.shape)
+        # x = self.up2(x, x3Att)
+        # print(x.shape)
+        # x = self.up3(x, x2Att)
+        # print(x.shape)
+        # x = self.up4(x, x1Att)
+        # print(x.shape)
+        x = self.up1(x3Att, x2Att)
+        # print(x.shape)
+        x = self.up2(x, x1Att)
+        # print(x.shape)
+
+        logits = self.outc(x)
+        # print(x1.shape)
+        return logits
+
+

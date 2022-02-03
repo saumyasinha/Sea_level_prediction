@@ -2,7 +2,6 @@ import numpy as np
 from math import sqrt
 import netCDF4
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import numpy.polynomial.polynomial as poly
 import cartopy.crs as ccrs
 from matplotlib.colors import TwoSlopeNorm, Normalize

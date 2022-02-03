@@ -3,16 +3,13 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn as nn
-# from Sea_level_prediction.ModuleLearning.ModuleCNN.Model import trainBatchwise as trainconv,FullyConvNet
-# from Sea_level_prediction.ModuleLearning.ModuleCNN.convLSTM import trainBatchwise as trainconvlstm,ConvLSTM
-# from Sea_level_prediction.ModuleLearning import eval
 from ModuleLearning.ModuleCNN.Model import trainBatchwise as trainconv,FullyConvNet
 from ModuleLearning.ModuleCNN.convLSTM import trainBatchwise as trainconvlstm,ConvLSTM
 from ModuleLearning import eval
 
 def get_target_mask(y):
-    # print(y[:5,0,0])
-    missing_val = 1e+36
+
+    # missing_val = 1e+36
     mask = ~np.isnan(y)#(y != missing_val)
     print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
@@ -21,7 +18,7 @@ def get_target_mask(y):
     return y_copy, mask
 
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, convlstm = False, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, SmaAt_UNet,convlstm = False, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
 
     valid = True
     outputs_quantile = len(alphas)
@@ -56,7 +53,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
             X_valid = np.concatenate([X_valid_reduced, current_heat_valid[:, np.newaxis, :, :]], axis=1)
 
             print(X_train.shape, X_valid.shape)
-        train_loss, valid_loss = trainconv(X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconv(SmaAt_UNet, X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 
@@ -78,7 +75,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,convlstm = False, hidden_dim=15, num_layers=1, kernel_size=(3,3),n_predictions = 1):
+def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,SmaAt_UNet, convlstm = False, hidden_dim=15, num_layers=1, kernel_size=(3,3),n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -99,7 +96,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     print(torch.cuda.is_available())
 
     if convlstm == False:
-        basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
+        basic_forecaster = FullyConvNet(SmaAt_UNet, quantile, outputs_quantile, n_timesteps)
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
                                     hidden_dim=hidden_dim,

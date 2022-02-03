@@ -4,7 +4,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
 # from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
-from ModuleLearning.ModuleCNN.unet import UNet
+from ModuleLearning.ModuleCNN.unet import UNet,SmaAt_UNet_model
 
 
 class EarlyStopping:
@@ -76,7 +76,7 @@ def weights_init(m):
 
 
 class FullyConvNet(nn.Module):
-    def __init__(self, quantile, outputs, dim_channels, dim_h=360, dim_w=180):
+    def __init__(self, SmaAt_UNet, quantile, outputs, dim_channels, dim_h=360, dim_w=180):
         super(FullyConvNet, self).__init__()
         # Input size: [batch, 13, 360, 180]
 
@@ -153,8 +153,10 @@ class FullyConvNet(nn.Module):
 
 
 
-
-        self.model = UNet(dim_channels,last_channel_size)
+        if SmaAt_UNet is False:
+            self.model = UNet(dim_channels,last_channel_size)
+        else:
+            self.model = SmaAt_UNet_model(dim_channels, last_channel_size)
    # #
     def forward(self, x):
         x = self.model(x)
@@ -163,10 +165,10 @@ class FullyConvNet(nn.Module):
         return x
 
 
-def trainBatchwise(trainX, trainY, validX,
+def trainBatchwise(SmaAt_UNet, trainX, trainY, validX,
                    validY,  weight_map_train, weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
-    basic_forecaster = FullyConvNet(quantile, outputs_quantile, n_timesteps)
+    basic_forecaster = FullyConvNet(SmaAt_UNet, quantile, outputs_quantile, n_timesteps)
 
     train_on_gpu = torch.cuda.is_available()
     print(train_on_gpu)
