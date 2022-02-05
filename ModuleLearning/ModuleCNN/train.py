@@ -74,19 +74,19 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,SmaAt_UNet, convlstm = False, hidden_dim=15, num_layers=1, kernel_size=(3,3),n_predictions = 1):
+def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
         X_valid = X_valid.permute(0, 3, 1, 2)
         # y_valid, valid_mask = get_target_mask(y_valid)
-        if convlstm == True:
+        if model_type == "ConvLSTM":
             X_valid = X_valid[:, :, np.newaxis, :, :]
 
     if X_test is not None:
         X_test = torch.from_numpy(X_test)
         X_test = X_test.permute(0, 3, 1, 2)
-        if convlstm == True:
+        if model_type == "ConvLSTM":
             X_test = X_test[:, :, np.newaxis, :, :]
 
     valid_rmse, valid_mae, test_rmse, test_mae, valid_mask,test_mask = 0,0,0,0,None,None
@@ -94,8 +94,8 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     outputs_quantile = len(alphas)
     print(torch.cuda.is_available())
 
-    if convlstm == False:
-        basic_forecaster = FullyConvNet(SmaAt_UNet, quantile, outputs_quantile, n_timesteps)
+    if model_type != "ConvLSTM":
+        basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
                                     hidden_dim=hidden_dim,
@@ -115,7 +115,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
 
     X_train = torch.from_numpy(X_train)
     X_train = X_train.permute(0, 3, 1, 2)
-    if convlstm == True:
+    if model_type == "ConvLSTM":
         X_train = X_train[:, :, np.newaxis, :, :]
         last_states = basic_forecaster.forward(X_train)
         y_train_pred = last_states[0][0]
@@ -130,7 +130,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     if X_test is not None:
     #    if torch.cuda.is_available():
      #       X_test = X_test.cuda()
-        if convlstm == False:
+        if model_type != "ConvLSTM":
             y_pred = basic_forecaster.forward(X_test)
         else:
             last_states = basic_forecaster.forward(X_test)
@@ -151,7 +151,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     if X_valid is not None:
       #  if torch.cuda.is_available():
        #     X_valid = X_valid.cuda()
-        if convlstm == False:
+        if model_type != "ConvLSTM":
             y_valid_pred = basic_forecaster.forward(X_valid)
         else:
             last_states = basic_forecaster.forward(X_valid)

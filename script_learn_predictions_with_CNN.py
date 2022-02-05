@@ -36,7 +36,7 @@ test_end_year = 2070 #2020 #
 lead_years = 30
 quantile = False
 
-model_type = "DilatedUnet"#"Unet_Attn" #"SmaAT_Unet" #"ConvLSTM" #"Unet"
+model_type = "Unet" #"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #"Unet"
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
@@ -46,7 +46,7 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_SmaAtunet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_bigchannels_unet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]

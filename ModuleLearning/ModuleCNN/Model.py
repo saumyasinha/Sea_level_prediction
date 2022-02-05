@@ -173,7 +173,13 @@ class FullyConvNet(nn.Module):
 def trainBatchwise(model_type, trainX, trainY, validX,
                    validY,  weight_map_train, weight_map_valid, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
+
     basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
+
+    def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("num of parameters in this mode:",count_parameters(basic_forecaster))
+
 
     train_on_gpu = torch.cuda.is_available()
     print(train_on_gpu)
@@ -193,7 +199,10 @@ def trainBatchwise(model_type, trainX, trainY, validX,
     print(basic_forecaster)
 
     optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
-    # scheduler = StepLR(optimizer, step_size=25, gamma=0.1)
+    #optimizer = torch.optim.SGD(basic_forecaster.parameters(), lr=lr)
+    samples = trainX.size()[0]
+    #steps = int(samples/batch_size)
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, steps)
     # criterion = torch.nn.MSELoss()
     # criterion = nn.L1Loss()
     samples = trainX.size()[0]
@@ -234,9 +243,11 @@ def trainBatchwise(model_type, trainX, trainY, validX,
             loss.backward()
             # perform a single optimization step (parameter update)
             optimizer.step()
-            # scheduler.step()
+         #   scheduler.step()
             per_epoch_loss+=loss.item()
             count_train+=1
+
+        #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, steps)
 
 
         train_loss_this_epoch = per_epoch_loss/count_train

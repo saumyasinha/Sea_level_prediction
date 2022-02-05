@@ -150,6 +150,7 @@ class CBAM(nn.Module):
         return out
 
 
+
 class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
 
@@ -242,3 +243,4 @@ class DownDilated(nn.Module):
 
     def forward(self, x):
         return self.maxpool_conv(x)
+
