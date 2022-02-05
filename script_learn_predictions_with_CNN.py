@@ -43,10 +43,10 @@ kernel_size = [(3,3)]
 
 alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
-reg = "CNN"
+reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_SmaAtunet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_bigchannels_SmaAtunet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
