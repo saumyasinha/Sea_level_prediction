@@ -18,7 +18,7 @@ def get_target_mask(y):
     return y_copy, mask
 
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, SmaAt_UNet,convlstm = False, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
 
     valid = True
     outputs_quantile = len(alphas)
@@ -41,8 +41,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
         print(X_train.shape)
         X_valid = X_valid.permute(0, 3, 4, 1, 2)
 
-    if convlstm==False:
-
+    if model_type != "ConvLSTM":
         if include_heat:
             current_heat_train = X_train[:,-1,1,:,:]
             X_train_reduced = X_train[:,:,0,:,:]
@@ -53,7 +52,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
             X_valid = np.concatenate([X_valid_reduced, current_heat_valid[:, np.newaxis, :, :]], axis=1)
 
             print(X_train.shape, X_valid.shape)
-        train_loss, valid_loss = trainconv(SmaAt_UNet, X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconv(model_type, X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 

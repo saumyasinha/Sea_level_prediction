@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from ModuleLearning.ModuleCNN.unet_helpers import DoubleConvDS,UpDS,DownDS,OutConv,CBAM
+from ModuleLearning.ModuleCNN.unet_helpers import DoubleConvDS,UpDS,DownDS,OutConv,CBAM,DoubleConv,Up, Down, DoubleDilatedConv, DownDilated
 
 
 
@@ -141,5 +141,124 @@ class SmaAt_UNet_model(nn.Module):
         logits = self.outc(x)
         # print(x1.shape)
         return logits
+
+class UNet_attn_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=16):
+        super(UNet_attn_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+        reduction_ratio = reduction_ratio
+
+        self.inc = DoubleConv(self.n_channels, 16)
+        self.cbam1 = CBAM(16, reduction_ratio=reduction_ratio)
+        self.down1 = Down(16, 32)
+        self.cbam2 = CBAM(32, reduction_ratio=reduction_ratio)
+        self.down2 = Down(32, 64)
+        self.cbam3 = CBAM(64, reduction_ratio=reduction_ratio)
+        self.down3 = Down(64, 128)
+        self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
+        factor = 2 if self.bilinear else 1
+        self.down4 = Down(128, 256 // factor)
+        self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
+        self.up1 = Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
+
+        self.outc = OutConv(16, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x1Att = self.cbam1(x1)
+        x2 = self.down1(x1)
+        x2Att = self.cbam2(x2)
+        x3 = self.down2(x2)
+        x3Att = self.cbam3(x3)
+        x4 = self.down3(x3)
+        x4Att = self.cbam4(x4)
+        x5 = self.down4(x4)
+        x5Att = self.cbam5(x5)
+        x = self.up1(x5Att, x4Att)
+        x = self.up2(x, x3Att)
+        x = self.up3(x, x2Att)
+        x = self.up4(x, x1Att)
+        logits = self.outc(x)
+        print("final output size:", logits.shape)
+        return logits
+
+class UNet_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True):
+        super(UNet_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+
+        self.inc = DoubleConv(self.n_channels, 16)
+        self.down1 = Down(16, 32)
+        self.down2 = Down(32, 64)
+        self.down3 = Down(64, 128)
+        factor = 2 if self.bilinear else 1
+        self.down4 = Down(128, 256 // factor)
+        self.up1 = Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
+
+        self.outc = OutConv(16, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.outc(x)
+        print("final output size:", logits.shape)
+        return logits
+
+
+class Dilated_UNet_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True):
+        super(Dilated_UNet_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+
+        self.inc = DoubleDilatedConv(self.n_channels, 16)
+        self.down1 = DownDilated(16, 32)
+        self.down2 = DownDilated(32, 64)
+        self.down3 = DownDilated(64, 128)
+        factor = 2 if self.bilinear else 1
+        self.down4 = DownDilated(128, 256 // factor)
+        self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
+        # self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4, dilation2=8)
+        self.up1 = Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
+
+        self.outc = OutConv(16, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x5 = self.bottleneck1(x5)
+        # x5 = self.bottleneck2(x5)
+        # print(x5.shape)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.outc(x)
+        return logits
+
 
 
