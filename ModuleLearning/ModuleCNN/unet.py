@@ -184,7 +184,7 @@ class UNet_attn_model(nn.Module):
         x = self.up3(x, x2Att)
         x = self.up4(x, x1Att)
         logits = self.outc(x)
-        print("final output size:", logits.shape)
+        #print("final output size:", logits.shape)
         return logits
 
 class UNet_model(nn.Module):
@@ -218,7 +218,7 @@ class UNet_model(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        print("final output size:", logits.shape)
+        #print("final output size:", logits.shape)
         return logits
 
 

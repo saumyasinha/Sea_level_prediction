@@ -4,12 +4,11 @@
 #SBATCH --job-name=cesm_smatunet_1yrlag_monthly_downscaled_future_data_and_Weights
 ##SBATCH --nodelist=bgpu-dhl1
 #SBATCH --account=blanca-kann
-#SBATCH --gres=gpu:2
-##SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:3
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
-#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm_smatunet_1yr_lag_downscaled_future_data_and_weights.%j.out
+#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm_unet_attn_1yr_lag_downscaled_future_data_and_weights.%j.out
 
 
 # === 3. Purge and load needed modules ===

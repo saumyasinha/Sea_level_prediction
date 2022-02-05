@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -36,7 +36,7 @@ test_end_year = 2070 #2020 #
 lead_years = 30
 quantile = False
 
-model_type = "Unet" #"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #"Unet"
+model_type = "SmaAT_Unet" #"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #"Unet"
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
@@ -46,7 +46,7 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_large_batchnorm_bigchannels_unet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_bigchannels_SmaAtunet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
@@ -61,7 +61,7 @@ if include_heat:
 
 
 batch_size = 6
-epochs = 1#200
+epochs = 200#200
 lr = 1e-4
 
 
@@ -182,7 +182,7 @@ def main():
 
         y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
         # y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        #train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
         valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
