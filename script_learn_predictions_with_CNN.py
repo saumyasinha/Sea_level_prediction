@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -36,7 +36,9 @@ test_end_year = 2070 #2020 #
 lead_years = 30
 quantile = False
 
+
 model_type = "DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
@@ -46,7 +48,8 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunet_not_downscaled_weighted_changed_years_not_normalized"
+
 
 ## Hyperparameters
 features = ["sea_level"]
@@ -62,7 +65,7 @@ if include_heat:
 
 
 batch_size = 6
-epochs = 1#200
+epochs = 200#200
 lr = 1e-4
 
 
