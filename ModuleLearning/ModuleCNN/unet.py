@@ -184,7 +184,7 @@ class UNet_attn_model(nn.Module):
         x = self.up3(x, x2Att)
         x = self.up4(x, x1Att)
         logits = self.outc(x)
-        print("final output size:", logits.shape)
+        # print("final output size:", logits.shape)
         return logits
 
 class UNet_model(nn.Module):
@@ -218,7 +218,7 @@ class UNet_model(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        print("final output size:", logits.shape)
+        # print("final output size:", logits.shape)
         return logits
 
 
@@ -235,8 +235,8 @@ class Dilated_UNet_model(nn.Module):
         self.down3 = DownDilated(64, 128)
         factor = 2 if self.bilinear else 1
         self.down4 = DownDilated(128, 256 // factor)
-        self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
-        # self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4, dilation2=8)
+        self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=2,double=False)
+        self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4,double=False)
         self.up1 = Up(256, 128 // factor, self.bilinear)
         self.up2 = Up(128, 64 // factor, self.bilinear)
         self.up3 = Up(64, 32 // factor, self.bilinear)
@@ -251,14 +251,16 @@ class Dilated_UNet_model(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
         x5 = self.bottleneck1(x5)
-        # x5 = self.bottleneck2(x5)
-        # print(x5.shape)
+        x5 = self.bottleneck2(x5)
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
         return logits
+
+
+
 
 
 

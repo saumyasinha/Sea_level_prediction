@@ -12,7 +12,7 @@ from skimage.measure import block_reduce
 
 def evaluation_metrics(pred, target, mask, weight_map):
 
-    # weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
+    weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
     diff = (target - pred)
 
     weighted_diff2 = (diff ** 2) * weight_map

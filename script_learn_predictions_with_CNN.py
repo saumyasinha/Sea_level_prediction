@@ -36,7 +36,7 @@ test_end_year = 2070 #2020 #
 lead_years = 30
 quantile = False
 
-model_type = "Unet" #"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #"Unet"
+model_type = "DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
@@ -46,14 +46,15 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_large_batchnorm_bigchannels_unet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 yearly = False  #in case you want to look at year level data instead of month level
-downscaling = True #converting 360*180 to 180*90
+downscaling = False #converting 360*180 to 180*90
+include_patches = False
 include_heat = False #include the heat content feature
 
 if include_heat:
@@ -169,7 +170,8 @@ def main():
         weight_map_train_input = weight_map_train
         weight_map_valid_input = weight_map_valid
 
-        if downscaling is False:
+
+        if include_patches:
             X_train_input,y_train_input = preprocessing.get_image_patches(X_train,y_train)# preprocessing.downscale_input(X_train,y_train)
             X_valid_input, y_valid_input =  preprocessing.get_image_patches(X_valid, y_valid) #preprocessing.downscale_input(X_valid, y_valid)
             X_test_input, y_test_input = preprocessing.get_image_patches(X_test, y_test) #preprocessing.downscale_input(X_test, y_test) # #
