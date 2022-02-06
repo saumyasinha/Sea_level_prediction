@@ -258,6 +258,53 @@ class Dilated_UNet_model(nn.Module):
         logits = self.outc(x)
         return logits
 
+class Dilated_UNet_attn_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=16):
+        super(Dilated_UNet_attn_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+        reduction_ratio = reduction_ratio
+
+        self.inc = DoubleDilatedConv(self.n_channels, 16)
+        self.cbam1 = CBAM(16, reduction_ratio=reduction_ratio)
+        self.down1 = DownDilated(16, 32)
+        self.cbam2 = CBAM(32, reduction_ratio=reduction_ratio)
+        self.down2 = DownDilated(32, 64)
+        self.cbam3 = CBAM(64, reduction_ratio=reduction_ratio)
+        self.down3 = DownDilated(64, 128)
+        self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
+        factor = 2 if self.bilinear else 1
+        self.down4 = DownDilated(128, 256 // factor)
+        self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
+        self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
+        self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4, double=False)
+        self.up1 = UpDilated(256, 128 // factor, self.bilinear)
+        self.up2 = UpDilated(128, 64 // factor, self.bilinear)
+        self.up3 = UpDilated(64, 32 // factor, self.bilinear)
+        self.up4 = UpDilated(32, 16, self.bilinear)
+
+        self.outc = OutConv(16, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x1Att = self.cbam1(x1)
+        x2 = self.down1(x1)
+        x2Att = self.cbam2(x2)
+        x3 = self.down2(x2)
+        x3Att = self.cbam3(x3)
+        x4 = self.down3(x3)
+        x4Att = self.cbam4(x4)
+        x5 = self.down4(x4)
+        x5 = self.bottleneck1(x5)
+        x5 = self.bottleneck2(x5)
+        x5Att = self.cbam5(x5)
+        x = self.up1(x5Att, x4Att)
+        x = self.up2(x, x3Att)
+        x = self.up3(x, x2Att)
+        x = self.up4(x, x1Att)
+        logits = self.outc(x)
+        return logits
 
 
 

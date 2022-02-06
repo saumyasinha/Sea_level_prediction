@@ -37,7 +37,7 @@ lead_years = 30
 quantile = False
 
 
-model_type = "DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "DilatedUnet_Attn"#"DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 hidden_dim = 12
 num_layers=1
@@ -48,7 +48,7 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunet_not_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunetattn_not_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
