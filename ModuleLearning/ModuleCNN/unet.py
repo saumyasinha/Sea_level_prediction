@@ -236,10 +236,10 @@ class Dilated_UNet_model(nn.Module):
         self.down4 = DownDilated(128, 256 // factor)
         self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
         self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4,double=False)
-        self.up1 = UpDilated(256, 128 // factor, self.bilinear)
-        self.up2 = UpDilated(128, 64 // factor, self.bilinear)
-        self.up3 = UpDilated(64, 32 // factor, self.bilinear)
-        self.up4 = UpDilated(32, 16, self.bilinear)
+        self.up1 = Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
