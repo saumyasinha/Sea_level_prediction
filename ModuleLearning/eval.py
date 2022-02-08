@@ -1,18 +1,18 @@
 import numpy as np
 from math import sqrt
-#import netCDF4
+import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-#import cartopy.crs as ccrs
-#from matplotlib.colors import TwoSlopeNorm, Normalize
+import cartopy.crs as ccrs
+from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
-#from cartopy.util import add_cyclic_point
+from cartopy.util import add_cyclic_point
 
 
 
 def evaluation_metrics(pred, target, mask, weight_map):
 
-    weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
+    # weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
     diff = (target - pred)
 
     weighted_diff2 = (diff ** 2) * weight_map
@@ -208,8 +208,8 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    v_min=-0.25 #zos.min()
-    v_max=0.25#zos.max()
+    v_min=-4 #zos.min()
+    v_max=5#zos.max()
     levels = np.linspace(v_min, v_max, 60)
     # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,

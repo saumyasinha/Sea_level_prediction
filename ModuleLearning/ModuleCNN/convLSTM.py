@@ -53,7 +53,7 @@ class EarlyStopping:
 
 class ConvLSTMCell(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =1):
         """
         Initialize ConvLSTM cell.
         Parameters
@@ -76,10 +76,12 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = kernel_size
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
+        self.dilation_rate = dilation_rate
 
         self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
+                              dilation = self.dilation_rate,
                               padding=self.padding,
                               bias=self.bias)
 
