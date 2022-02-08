@@ -143,7 +143,7 @@ class SmaAt_UNet_model(nn.Module):
         return logits
 
 class UNet_attn_model(nn.Module):
-    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=16):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=4): #16
         super(UNet_attn_model, self).__init__()
         self.n_channels = dim_channels
         self.n_classes = last_channel_size
@@ -235,7 +235,7 @@ class Dilated_UNet_model(nn.Module):
         factor = 2 if self.bilinear else 1
         self.down4 = DownDilated(128, 256 // factor)
         self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
-        self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4,double=False)
+        #self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4,double=False)
         self.up1 = Up(256, 128 // factor, self.bilinear)
         self.up2 = Up(128, 64 // factor, self.bilinear)
         self.up3 = Up(64, 32 // factor, self.bilinear)
@@ -250,7 +250,7 @@ class Dilated_UNet_model(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
         x5 = self.bottleneck1(x5)
-        x5 = self.bottleneck2(x5)
+        #x5 = self.bottleneck2(x5)
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
@@ -259,7 +259,7 @@ class Dilated_UNet_model(nn.Module):
         return logits
 
 class Dilated_UNet_attn_model(nn.Module):
-    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=16):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True, reduction_ratio=4):#16
         super(Dilated_UNet_attn_model, self).__init__()
         self.n_channels = dim_channels
         self.n_classes = last_channel_size
@@ -278,11 +278,11 @@ class Dilated_UNet_attn_model(nn.Module):
         self.down4 = DownDilated(128, 256 // factor)
         self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
         self.bottleneck1 = DoubleDilatedConv(256 // factor, 256 // factor)
-        self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4, double=False)
-        self.up1 = UpDilated(256, 128 // factor, self.bilinear)
-        self.up2 = UpDilated(128, 64 // factor, self.bilinear)
-        self.up3 = UpDilated(64, 32 // factor, self.bilinear)
-        self.up4 = UpDilated(32, 16, self.bilinear)
+        #self.bottleneck2 = DoubleDilatedConv(256 // factor, 256 // factor, dilation1=4, double=False)
+        self.up1 = Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -297,7 +297,7 @@ class Dilated_UNet_attn_model(nn.Module):
         x4Att = self.cbam4(x4)
         x5 = self.down4(x4)
         x5 = self.bottleneck1(x5)
-        x5 = self.bottleneck2(x5)
+        #x5 = self.bottleneck2(x5)
         x5Att = self.cbam5(x5)
         x = self.up1(x5Att, x4Att)
         x = self.up2(x, x3Att)

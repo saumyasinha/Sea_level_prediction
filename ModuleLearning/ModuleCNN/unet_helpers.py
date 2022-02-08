@@ -139,7 +139,7 @@ class SpatialAttention(nn.Module):
 
 
 class CBAM(nn.Module):
-    def __init__(self, input_channels, reduction_ratio=16, kernel_size=7):
+    def __init__(self, input_channels, reduction_ratio=4, kernel_size=7):
         super(CBAM, self).__init__()
         self.channel_att = ChannelAttention(input_channels, reduction_ratio=reduction_ratio)
         self.spatial_att = SpatialAttention(kernel_size=kernel_size)
@@ -201,10 +201,10 @@ class DoubleConv(nn.Module):
         if not mid_channels:
             mid_channels = out_channels
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=5, padding=2),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=5, padding=2),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -222,17 +222,17 @@ class DoubleDilatedConv(nn.Module):
 
         if double:
             self.double_conv = nn.Sequential(
-                nn.Conv2d(in_channels, mid_channels, kernel_size=3,dilation=dilation1, padding=1),
+                nn.Conv2d(in_channels, mid_channels, kernel_size=5,dilation=dilation1, padding=2),
                 nn.BatchNorm2d(mid_channels),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(mid_channels, out_channels, kernel_size=3, dilation=dilation2,padding=2),
+                nn.Conv2d(mid_channels, out_channels, kernel_size=5, dilation=dilation2,padding=4),
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True)
             )
 
         else:
             self.double_conv = nn.Sequential(
-                nn.Conv2d(in_channels, mid_channels, kernel_size=3, dilation=dilation1, padding=1),
+                nn.Conv2d(in_channels, mid_channels, kernel_size=5, dilation=dilation1, padding=2),
                 nn.BatchNorm2d(mid_channels),
                 nn.ReLU(inplace=True),
             )

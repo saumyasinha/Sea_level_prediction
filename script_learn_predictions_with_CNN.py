@@ -37,7 +37,7 @@ lead_years = 30
 quantile = False
 
 
-model_type = "DilatedUnet_Attn"#"DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "Unet"#"DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 hidden_dim = 12
 num_layers=1
@@ -48,7 +48,7 @@ q50 = 9
 reg = "CNN/Unet/"
 
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_1yr_lag_large_batchnorm_dilatedunetattn_not_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "cnn_with_1yr_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
@@ -56,7 +56,7 @@ features = ["sea_level"]
 n_features = len(features)
 n_prev_months = 12
 yearly = False  #in case you want to look at year level data instead of month level
-downscaling = False #converting 360*180 to 180*90
+downscaling = True #converting 360*180 to 180*90
 include_patches = False
 include_heat = False #include the heat content feature
 
