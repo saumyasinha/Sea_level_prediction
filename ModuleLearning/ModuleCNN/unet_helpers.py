@@ -199,10 +199,10 @@ class Up3d(nn.Module):
 class DoubleConv3d(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, out_channels, mid_channels=None):
+    #def __init__(self, in_channels, out_channels, mid_channels=None):
         super().__init__()
         if not mid_channels:
-            mid_channels = out_channels
+           mid_channels = out_channels
         self.double_conv = nn.Sequential(
             nn.Conv3d(in_channels, mid_channels, kernel_size=3, padding=1), #trying kernel 5 instead of 3, so changed padding to 2 instead of 1
             nn.BatchNorm3d(mid_channels),
@@ -214,6 +214,36 @@ class DoubleConv3d(nn.Module):
 
     def forward(self, x):
         return self.double_conv(x)
+
+    #def __init__(self, in_channels, out_channels, mid_channels=None, kernels_per_layer=2):
+        #super().__init__()
+        #if not mid_channels:
+        #    mid_channels = out_channels
+       # self.double_conv = nn.Sequential(
+           # DepthwiseSeparableConv3d(in_channels, mid_channels, kernel_size=3, kernels_per_layer=kernels_per_layer, padding=1),
+          #  nn.BatchNorm3d(mid_channels),
+         #   nn.ReLU(inplace=True),
+        #    DepthwiseSeparableConv3d(mid_channels, out_channels, kernel_size=3, kernels_per_layer=kernels_per_layer, padding=1),
+       #     nn.BatchNorm3d(out_channels),
+      #      nn.ReLU(inplace=True)
+     #   )
+
+    #def forward(self, x):
+        #return self.double_conv(x)
+    
+    
+#class DepthwiseSeparableConv3d(nn.Module):
+ #   def __init__(self, in_channels, output_channels, kernel_size, padding=0, kernels_per_layer=1):
+  #      super(DepthwiseSeparableConv3d, self).__init__()
+   #     # In Tensorflow DepthwiseConv2D has depth_multiplier instead of kernels_per_layer
+    #    self.depthwise = nn.Conv3d(in_channels, in_channels * kernels_per_layer, kernel_size=kernel_size, padding=padding,
+     #                              groups=in_channels)
+      #  self.pointwise = nn.Conv3d(in_channels * kernels_per_layer, output_channels, kernel_size=1)
+
+    #def forward(self, x):
+     #   x = self.depthwise(x)
+      #  x = self.pointwise(x)
+       # return x
 
 class DoubleDilatedConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
