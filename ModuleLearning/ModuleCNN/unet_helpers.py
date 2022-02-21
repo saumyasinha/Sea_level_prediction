@@ -215,6 +215,38 @@ class DoubleConv3d(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
+class DownDilated3d(nn.Module):
+    """Downscaling with maxpool then double conv"""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.maxpool_conv = nn.Sequential(
+            nn.MaxPool3d(2),
+            DoubleDilatedConv3d(in_channels, out_channels)
+        )
+
+    def forward(self, x):
+        return self.maxpool_conv(x)
+
+
+class DoubleDilatedConv3d(nn.Module):
+    """(convolution => [BN] => ReLU) * 2"""
+
+    def __init__(self, in_channels, out_channels, mid_channels=None,dilation1=1, dilation2=2):
+        super().__init__()
+        if not mid_channels:
+           mid_channels = out_channels
+        self.double_conv = nn.Sequential(
+            nn.Conv3d(in_channels, mid_channels, kernel_size=3, dilation=dilation1, padding=1), #trying kernel 5 instead of 3, so changed padding to 2 instead of 1
+            nn.BatchNorm3d(mid_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(mid_channels, out_channels, kernel_size=3, dilation=dilation2, padding=2),
+            nn.BatchNorm3d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.double_conv(x)
 
 
 

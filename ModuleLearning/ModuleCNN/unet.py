@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from ModuleLearning.ModuleCNN.unet_helpers import DoubleConvDS,UpDS,DownDS,OutConv,CBAM,DoubleConv,Up, Down, DoubleDilatedConv, DownDilated, UpDilated, DoubleConv3d,Up3d, Down3d,OutConv3d
+from ModuleLearning.ModuleCNN.unet_helpers import DoubleConvDS,UpDS,DownDS,OutConv,CBAM,DoubleConv,Up, Down, DoubleDilatedConv, DownDilated, UpDilated, DoubleConv3d,Up3d, Down3d,OutConv3d, DoubleDilatedConv3d, DownDilated3d
 
 
 
@@ -253,6 +253,54 @@ class UNet3d_model(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
+
+        return logits
+
+
+class Dilated_UNet3d_model(nn.Module):
+    def __init__(self, dim_channels,last_channel_size=1,bilinear=True):
+        super(Dilated_UNet3d_model, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+
+        self.inc = DoubleDilatedConv3d(self.n_channels, 8)
+        self.down1 = DownDilated3d(8, 16)
+        self.down2 = DownDilated3d(16, 32)
+        self.down3 = DownDilated3d(32, 64)
+        factor = 2 if self.bilinear else 1
+        self.down4 = DownDilated3d(64, 128 // factor)
+        self.bottleneck1 = DoubleDilatedConv3d(128 // factor, 128 // factor)
+        self.up1 = Up3d(128, 64 // factor, self.bilinear)
+        self.up2 = Up3d(64, 32 // factor, self.bilinear)
+        self.up3 = Up3d(32, 16 // factor, self.bilinear)
+        self.up4 = Up3d(16, 8, self.bilinear)
+
+        self.outc = OutConv3d(8, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        print(x1.shape)
+        x2 = self.down1(x1)
+        print(x2.shape)
+        x3 = self.down2(x2)
+        print(x3.shape)
+        x4 = self.down3(x3)
+        print(x4.shape)
+        x5 = self.down4(x4)
+        print(x5.shape)
+        x5 = self.bottleneck1(x5)
+        print(x5.shape)
+        x = self.up1(x5, x4)
+        print(x.shape)
+        x = self.up2(x, x3)
+        print(x.shape)
+        x = self.up3(x, x2)
+        print(x.shape)
+        x = self.up4(x, x1)
+        print(x.shape)
+        logits = self.outc(x)
+        print(logits.shape)
 
         return logits
 

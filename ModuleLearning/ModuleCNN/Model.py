@@ -4,7 +4,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
 # from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
-from ModuleLearning.ModuleCNN.unet import UNet, UNet_model,SmaAt_UNet_model, UNet_attn_model,Dilated_UNet_model,Dilated_UNet_attn_model, UNet3d_model
+from ModuleLearning.ModuleCNN.unet import UNet, UNet_model,SmaAt_UNet_model, UNet_attn_model,Dilated_UNet_model,Dilated_UNet_attn_model, UNet3d_model, Dilated_UNet3d_model
 
 
 class EarlyStopping:
@@ -152,9 +152,10 @@ class FullyConvNet(nn.Module):
     #     x = torch.squeeze(x)
 
 
-
         if model_type == "Unet3d":
             self.model = UNet3d_model(dim_channels=1,last_channel_size=last_channel_size)
+        if model_type == "DilatedUnet3d":
+            self.model = Dilated_UNet3d_model(dim_channels=1,last_channel_size=last_channel_size)
         if model_type == "Unet":
             self.model = UNet_model(dim_channels,last_channel_size)
         if model_type == "DilatedUnet":
