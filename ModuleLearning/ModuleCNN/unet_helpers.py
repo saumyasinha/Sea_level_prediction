@@ -202,7 +202,7 @@ class DoubleConv3d(nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None):
         super().__init__()
         if not mid_channels:
-            mid_channels = out_channels
+           mid_channels = out_channels
         self.double_conv = nn.Sequential(
             nn.Conv3d(in_channels, mid_channels, kernel_size=3, padding=1), #trying kernel 5 instead of 3, so changed padding to 2 instead of 1
             nn.BatchNorm3d(mid_channels),
@@ -217,9 +217,6 @@ class DoubleConv3d(nn.Module):
 
 
 
-class Flatten(nn.Module):
-    def forward(self, x):
-        return x.view(x.size(0), -1)
 
 class DoubleDilatedConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""

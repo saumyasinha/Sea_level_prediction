@@ -229,18 +229,18 @@ class UNet3d_model(nn.Module):
         self.n_classes = last_channel_size
         self.bilinear = bilinear
 
-        self.inc = DoubleConv3d(self.n_channels, 16)
-        self.down1 = Down3d(16, 32)
-        self.down2 = Down3d(32, 64)
-        self.down3 = Down3d(64, 128)
+        self.inc = DoubleConv3d(self.n_channels, 8)
+        self.down1 = Down3d(8, 16)
+        self.down2 = Down3d(16, 32)
+        self.down3 = Down3d(32, 64)
         factor = 2 if self.bilinear else 1
-        self.down4 = Down3d(128, 256 // factor)
-        self.up1 = Up3d(256, 128 // factor, self.bilinear)
-        self.up2 = Up3d(128, 64 // factor, self.bilinear)
-        self.up3 = Up3d(64, 32 // factor, self.bilinear)
-        self.up4 = Up3d(32, 16, self.bilinear)
+        self.down4 = Down3d(64, 128 // factor)
+        self.up1 = Up3d(128, 64 // factor, self.bilinear)
+        self.up2 = Up3d(64, 32 // factor, self.bilinear)
+        self.up3 = Up3d(32, 16 // factor, self.bilinear)
+        self.up4 = Up3d(16, 8, self.bilinear)
 
-        self.outc = OutConv3d(16, self.n_classes)
+        self.outc = OutConv3d(8, self.n_classes)
 
     def forward(self, x):
         x1 = self.inc(x)
