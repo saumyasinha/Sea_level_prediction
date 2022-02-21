@@ -215,6 +215,12 @@ class DoubleConv3d(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.size(0), -1)
+
 class DoubleDilatedConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -351,7 +357,7 @@ class DoubleConv(nn.Module):
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
-        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
 
     def forward(self, x):
         return self.conv(x)

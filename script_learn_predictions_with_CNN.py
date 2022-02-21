@@ -9,13 +9,14 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
-models = ['CESM1LE'] # ['MIROC-ES2L'] #['CESM2LE'] #['MPI-ESM1-2-HR']  #
+## which climate model to work on
+models = ['CESM1LE'] # ['MIROC-ES2L'] #['CESM2LE'] #['MPI-ESM1-2-HR']
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -28,36 +29,39 @@ future_path = path_folder + "2015-2100/npy_files/"
 historical_heat_path = path_heatcontent_folder + "1850-2014/npy_files/"
 future_heat_path = path_heatcontent_folder + "2015-2100/npy_files/"
 
+## parameters
 train_start_year = 1930 # 1880 #
 train_end_year = 2040 #1990 #
 test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
+model_type = "Unet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+
+## if we want to have probabilsitic prediction
 quantile = False
+alphas = np.arange(0.05, 1.0, 0.05)
+q50 = 9
+
+## folders to finally save the model
+reg = "CNN/Unet/"
+# sub_reg = "final_cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 
-
-model_type = "Unet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
-
-
+## Hyperparameters
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
 
-alphas = np.arange(0.05, 1.0, 0.05)
-q50 = 9
-reg = "CNN/Unet/"
+batch_size = 6
+epochs = 1#200
+lr = 1e-4
 
-# sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"
-
-
-
-## Hyperparameters
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12*2
+n_prev_months = 12 ##seq-length of the deep sequence models
+
 yearly = False  #in case you want to look at year level data instead of month level
 downscaling = True #converting 360*180 to 180*90
 include_patches = False
@@ -65,12 +69,6 @@ include_heat = False #include the heat content feature
 
 if include_heat:
     features.extend(["heat_content"])
-
-
-batch_size = 6
-epochs = 200#200
-lr = 1e-4
-
 
 
 
@@ -84,7 +82,7 @@ def main():
 
         f = open(folder_saving +"/results.txt", 'a')
 
-        ## these weights are cosine of latitude, used for weighted RMSE as a loss function
+        ## these weights are cosine of latitude, important for using weighted RMSE as a loss function
         weight_map = np.load(historical_path+"weights_historical_"+model+"_zos_fr_1850_2014.npy")
         weight_map = np.abs(weight_map)
         if downscaling:
@@ -168,30 +166,27 @@ def main():
 
         # X_train, X_valid, X_test = preprocessing.normalize_from_train(X_train,X_valid, X_test)
 
-        weight_map_train = np.repeat(weight_map[None, ...], len(X_train), axis=0)
-        weight_map_valid = np.repeat(weight_map[None, ...], len(X_valid), axis=0)
+        # weight_map_train = np.repeat(weight_map[None, ...], len(X_train), axis=0)
+        # weight_map_valid = np.repeat(weight_map[None, ...], len(X_valid), axis=0)
         X_train_input, y_train_input = X_train,y_train
         X_valid_input, y_valid_input = X_valid, y_valid
         X_test_input, y_test_input = X_test, y_test
-        weight_map_train_input = weight_map_train
-        weight_map_valid_input = weight_map_valid
+        # weight_map_train_input = weight_map_train
+        # weight_map_valid_input = weight_map_valid
 
 
         if include_patches:
             X_train_input,y_train_input = preprocessing.get_image_patches(X_train,y_train)# preprocessing.downscale_input(X_train,y_train)
             X_valid_input, y_valid_input =  preprocessing.get_image_patches(X_valid, y_valid) #preprocessing.downscale_input(X_valid, y_valid)
             X_test_input, y_test_input = preprocessing.get_image_patches(X_test, y_test) #preprocessing.downscale_input(X_test, y_test) # #
-            weight_map_train_input = preprocessing.get_image_patches(None,weight_map_train)
-            weight_map_valid_input = preprocessing.get_image_patches(None, weight_map_valid)
-            print(weight_map_train_input.shape)
+            # weight_map_train_input = preprocessing.get_image_patches(None,weight_map_train)
+            # weight_map_valid_input = preprocessing.get_image_patches(None, weight_map_valid)
+
 
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-
-        y_valid_input_copy = y_valid_input.copy()  # if you are not doing this then pass X_valid and y_valid as None
-        # y_valid_copy = y_valid.copy()
-        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map_train_input, weight_map_valid_input, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input_copy, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
         f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
         f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
         f.close()
@@ -203,17 +198,18 @@ def main():
         # # # # print(y_valid_pred.shape)
         # # #
         # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
-        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
-        # # diff = model_trend - valid_trend
-        # # eval.plot(diff, folder_saving, "diff_trend_2041-2070_same_y_axis", trend=True)
-        # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
-        # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map)
         #
+        # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        # # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
+        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        # # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
+        # diff = model_trend - valid_trend
+        # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_same_y_axis", trend=True)
+        # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+        # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map)
+
         # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
-        # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
+        # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
 
         ### plot true vs predicitons on best/worst rmse pts
         # mean_for_valid_period = np.mean(y_valid, axis=0)
@@ -265,13 +261,24 @@ def main():
         # persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly)
         # # eval.plot(persistence_trend, folder_saving, "persistence_trend_2041-2070_same_yaxis", trend=True)
         # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # eval.plot(valid_trend - persistence_trend, folder_saving, "diff_ml_and_persis_trend_2041-2070_same_y_axis", trend=True)
+        # eval.plot(model_trend - persistence_trend, folder_saving, "diff_model_and_persis_trend_2041-2070_same_y_axis", trend=True)
 
         # persistence_rmse, persistence_mae = eval.evaluation_metrics(model_trend*1000, persistence_trend*1000, mask = ~np.isnan(persistence_trend), weight_map=weight_map)
+        # persistence_rmse, persistence_mae = eval.evaluation_metrics(y_valid, y_persistence,
+        #                                                             mask=valid_mask,
+        #                                                             weight_map=weight_map)
         # #
         # print("persistence trend rmse, mae: ",persistence_rmse, persistence_mae)
         # # persistence trend rmse, mae: 0.6830641514406547 , 0.47213281289195413
         #persistence model (and not trend) rmse, mae:  0.0363006390941568 0.026479292738289497
+        #persistence  model (for test) rmse, mae: 0.04712170069153805 0.033402950851230594
+
+
+
+
+
+
+
 
 if __name__=='__main__':
     main()

@@ -209,3 +209,24 @@ def normalize_from_train(X_train, X_test,y_train, y_test, split_index):
 
     return X_train, X_test, y_train, y_test
 
+# def get_climatology_data(y_train, folder_path):
+#     cliamtology_data = y_train[10*12 : (22*12)+12, :, :]
+#     n_months = cliamtology_data.shape[0]
+#     print(cliamtology_data.shape)
+#
+#     final_climatology_avg_data = []
+#
+#     for month in range(12):
+#         indices_month = [i for i in range(n_months) if i % 12 == month]
+#         X_sub = cliamtology_data[indices_month, :, :]
+#         print(X_sub.shape)
+#         avg_for_month = np.mean(X_sub, axis=0)
+#         print(avg_for_month.shape)
+#         final_climatology_avg_data.append(avg_for_month)
+#
+#
+#
+#     final_climatology_avg_data = np.array(final_climatology_avg_data)
+#     print(final_climatology_avg_data.shape)
+#
+#     np.save(folder_path+"/climatology_cesm.npy", final_climatology_avg_data)

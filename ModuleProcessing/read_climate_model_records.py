@@ -84,19 +84,19 @@ def get_weights_perpixel(path):
                 print(var)
 
 
-            # weights_per_lat = np.cos(lats)
-            # # norm_weights = weights_per_lat/weights_per_lat.sum()
-            #
-            # weight_map = np.full((360,180),0.0)
-            # for i in range(180):
-            #     weight_map[:,i] = weights_per_lat[i]
-            # print(weight_map.shape)
-            # print(weight_map[0,0], weight_map[1,0], weights_per_lat[0])
-            # # print(np.max(weights), np.min(weights))
-            # # norm_weights = weights/weights.sum()
-            # # print(np.max(norm_weights), np.min(norm_weights))
-            #
-            # np.save(path +"/npy_files/weights_" + filename[:-7] + '.npy', weight_map)
+            weights_per_lat = np.cos(lats)
+            # norm_weights = weights_per_lat/weights_per_lat.sum()
+
+            weight_map = np.full((360,180),0.0)
+            for i in range(180):
+                weight_map[:,i] = weights_per_lat[i]
+            print(weight_map.shape)
+            print(weight_map[0,0], weight_map[1,0], weights_per_lat[0])
+            # print(np.max(weights), np.min(weights))
+            # norm_weights = weights/weights.sum()
+            # print(np.max(norm_weights), np.min(norm_weights))
+
+            np.save(path +"/npy_files/weights_" + filename[:-7] + '.npy', weight_map)
 
             break
 

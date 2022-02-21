@@ -10,9 +10,10 @@ from cartopy.util import add_cyclic_point
 
 
 
-def evaluation_metrics(pred, target, mask, weight_map):
+def evaluation_metrics(pred, target, mask, weight_map, trend = False):
 
-    # weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
+    if trend == False:
+        weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
     diff = (target - pred)
 
     weighted_diff2 = (diff ** 2) * weight_map
@@ -37,14 +38,6 @@ def evaluation_metrics(pred, target, mask, weight_map):
     #     return rmse, mae, best_rmse_pt, worse_rmse_pt
 
     return rmse, mae
-
-
-def signaltonoise(a, axis=None):
-    # a = np.asanyarray(a)
-    m = a.mean(axis)
-    sd = a.std(axis=axis)
-    # return np.where(sd == 0, 0, m/sd)
-    return m/sd
 
 
 def fit_trend(pred, mask, yearly = False):
@@ -149,22 +142,6 @@ def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
 
 def plot(xr, folder_saving, save_file, trend =False, index = None):
 
-    # sla_masked = np.ma.masked_where(~mask, xr)
-    # sla_masked = np.transpose(sla_masked)
-    # print(sla_masked.shape, sla_masked.min(), sla_masked.max())
-    # lats = np.load(folder_saving+"/lats.npy",allow_pickle=True)
-    # lons = np.load(folder_saving+"/lons.npy",allow_pickle=True)
-    #
-    # ax = plt.axes(projection=ccrs.PlateCarree())
-    #
-    # plt.contourf(lons, lats, sla_masked, 60, cmap = "jet",
-    #              transform=ccrs.PlateCarree())
-    #
-    # ax.coastlines()
-    # plt.colorbar()
-    # plt.savefig(folder_saving+"/"+save_file)
-    # plt.close()
-
     # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
     obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
@@ -172,19 +149,19 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     # for var in dataset.variables.values():
     #     print(var)
     #
-    if trend==False:
-        zos_gt = dataset.variables['SSH'][index,:, :]/100
-        print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
-        zos = np.transpose(xr)
-        # zos = xr
-        print(np.min(zos), np.max(zos), zos.shape)
-        zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
-        print(np.min(zos), np.max(zos), zos.shape)
-        print(type(zos), type(zos_gt))
+    # if trend==False:
+    #     zos_gt = dataset.variables['SSH'][index,:, :]/100
+    #     print(np.min(zos_gt), np.max(zos_gt), zos_gt.shape)
+    #     zos = np.transpose(xr)
+    #     # zos = xr
+    #     print(np.min(zos), np.max(zos), zos.shape)
+    #     zos = np.ma.masked_where(np.ma.getmask(zos_gt), zos)
+    #     print(np.min(zos), np.max(zos), zos.shape)
+    #     print(type(zos), type(zos_gt))
+    #
+    # # diff = zos_gt - zos
 
-    # diff = zos_gt - zos
-
-    else:
+    if trend:
         zos = np.transpose(xr)
         print(np.min(zos), np.max(zos), zos.shape)
         # zos = np.ma.masked_where(zos==1e+36, zos)
@@ -208,14 +185,14 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    v_min=-4 #zos.min()
-    v_max=5#zos.max()
+    v_min=-2 #zos.min()
+    v_max=2 #zos.max()
     levels = np.linspace(v_min, v_max, 60)
     # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,
                  transform=ccrs.PlateCarree(), extend = "both")  #norm=norm,
     cbar = plt.colorbar()
-    # cbar.set_ticks(range(v_min, v_max + 1))
+    cbar.set_ticks(range(v_min, v_max + 1))
 
     # least_squares_x = [281,183,279,215,181]
     # least_squares_y = [-51,39,-47,37,39]

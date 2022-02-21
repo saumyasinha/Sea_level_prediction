@@ -10,6 +10,7 @@ from ModuleLearning import eval
 def get_target_mask(y):
 
     # missing_val = 1e+36
+    print(np.isnan(y).sum())
     mask = ~np.isnan(y)#(y != missing_val)
     print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
@@ -18,7 +19,7 @@ def get_target_mask(y):
     return y_copy, mask
 
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_map_valid, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
 
     valid = True
     outputs_quantile = len(alphas)
@@ -26,8 +27,8 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
     y_train, train_mask = get_target_mask(y_train)
     y_valid, valid_mask = get_target_mask(y_valid)
 
-    X_train, y_train, train_mask, weight_map_train = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask), torch.from_numpy(weight_map_train)
-    X_valid, y_valid, valid_mask, weight_map_valid = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask), torch.from_numpy(weight_map_valid)
+    X_train, y_train, train_mask, weight_map = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask), torch.from_numpy(weight_map)
+    X_valid, y_valid, valid_mask = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask)
 
     if include_heat is False:
         print(X_train.shape)
@@ -56,7 +57,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
         if model_type[-2:]=="3d":
             X_train = X_train[:,  np.newaxis, :, :, :]
             X_valid = X_valid[:, np.newaxis, :,: , :]
-        train_loss, valid_loss = trainconv(model_type, X_train, y_train, X_valid, y_valid,  weight_map_train, weight_map_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconv(model_type, X_train, y_train, X_valid, y_valid,  weight_map, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
 
@@ -67,7 +68,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map_train,weight_
 
         print(X_train.shape)
 
-        train_loss, valid_loss = trainconvlstm(X_train, y_train, X_valid, y_valid, weight_map_train, weight_map_valid, train_mask, valid_mask,
+        train_loss, valid_loss = trainconvlstm(X_train, y_train, X_valid, y_valid, weight_map, train_mask, valid_mask,
                                            n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate,
                                            folder_saving, model_saved, quantile,
                                            alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile,
@@ -117,18 +118,18 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
 
     basic_forecaster.eval()
 
-    X_train = torch.from_numpy(X_train)
-    X_train = X_train.permute(0, 3, 1, 2)
-    if model_type == "ConvLSTM":
-        X_train = X_train[:, :, np.newaxis, :, :]
-        last_states = basic_forecaster.forward(X_train)
-        y_train_pred = last_states[0][0]
-
-    else:
-        y_train_pred = basic_forecaster.forward(X_train)
-
-    y_train_pred = y_train_pred.cpu().detach().numpy()
-    np.save(folder_saving + "/" + "train_predictions.npy", y_train_pred)
+    # X_train = torch.from_numpy(X_train)
+    # X_train = X_train.permute(0, 3, 1, 2)
+    # if model_type == "ConvLSTM":
+    #     X_train = X_train[:, :, np.newaxis, :, :]
+    #     last_states = basic_forecaster.forward(X_train)
+    #     y_train_pred = last_states[0][0]
+    #
+    # else:
+    #     y_train_pred = basic_forecaster.forward(X_train)
+    #
+    # y_train_pred = y_train_pred.cpu().detach().numpy()
+    # np.save(folder_saving + "/" + "train_predictions.npy", y_train_pred)
 
 
     if X_test is not None:
@@ -145,7 +146,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
         y_test_wo_patches = y_test #eval.combine_image_patches(y_test)
         y_pred_wo_patches = y_pred #eval.combine_image_patches(y_pred)
 
-        np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+        # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
         y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
         test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
@@ -168,7 +169,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
        #
         y_valid_wo_patches = y_valid #eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = y_valid_pred #eval.combine_image_patches(y_valid_pred)
-        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
+        # np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask, weight_map_wo_patches)
 
