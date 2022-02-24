@@ -149,12 +149,14 @@ class ConvLSTMCell(nn.Module):
         self.bias = bias
         self.dilation_rate = dilation_rate
 
+
         # self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
         #                       out_channels=4 * self.hidden_dim,
         #                       kernel_size=self.kernel_size,
         #                       dilation = self.dilation_rate,
         #                       padding=self.padding,
         #                       bias=self.bias)
+
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
@@ -166,6 +168,7 @@ class ConvLSTMCell(nn.Module):
                       bias=self.bias),
             # nn.ReLU(),
         )
+
 
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
