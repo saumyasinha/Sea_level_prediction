@@ -36,7 +36,7 @@ test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
-model_type = "DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -44,15 +44,15 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 
 ## folders to finally save the model
-reg = "CNN/Unet/"
-# sub_reg = "final_cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"#"
-sub_reg = "cnn_with_2yrs_lag_unetdilated3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+reg = "CNN/Unet/" #convLSTM/"
+#sub_reg = "cnn_with_more_hidden_1yr_lag_dilated_convlstm_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#"cnn_with_2yrs_lag_unetdilated3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
-hidden_dim = 12
+hidden_dim = 25
 num_layers=1
-kernel_size = [(3,3)]
+kernel_size = (3,3)
 
 batch_size = 6
 epochs = 200#200
@@ -60,7 +60,7 @@ lr = 1e-4
 
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12*2 ##seq-length of the deep sequence models
+n_prev_months = 12 ##seq-length of the deep sequence models
 
 yearly = False  #in case you want to look at year level data instead of month level
 downscaling = True #converting 360*180 to 180*90

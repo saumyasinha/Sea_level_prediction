@@ -53,7 +53,7 @@ class EarlyStopping:
 
 class ConvLSTMCell(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =1):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =(1,2,4)):
         """
         Initialize ConvLSTM cell.
         Parameters
@@ -77,13 +77,23 @@ class ConvLSTMCell(nn.Module):
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
         self.dilation_rate = dilation_rate
-
-        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
-                              kernel_size=self.kernel_size,
-                              dilation = self.dilation_rate,
-                              padding=self.padding,
-                              bias=self.bias)
+        
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
+            # nn.ReLU(),
+            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
+            # nn.ReLU(),
+            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
+                      dilation=self.dilation_rate[2], padding=(4,4),
+                      bias=self.bias),
+            # nn.ReLU(),
+        )
+        #self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+           #                   out_channels=4 * self.hidden_dim,
+          #                    kernel_size=self.kernel_size,
+         #                     dilation = self.dilation_rate,
+        #                      padding=self.padding,
+       #                       bias=self.bias)
 
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
@@ -104,8 +114,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),
-                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device),
+                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device))
 
 
 class ConvLSTM(nn.Module):
@@ -313,7 +323,7 @@ def trainBatchwise(trainX, trainY, validX,
             if train_on_gpu:
                 xx, yy = xx.cuda(), yy.cuda()
 
-            outputs = basic_forecaster.forward(xx)
+            outputs = basic_forecaster.forward(xx)[0][0]
             optimizer.zero_grad()
             if quantile:
                 loss = quantile_loss(outputs, yy, alphas, batch_mask, weight_map)
@@ -351,7 +361,7 @@ def trainBatchwise(trainX, trainY, validX,
                     xx_valid, yy_valid = xx_valid.cuda(), yy_valid.cuda()
                     # validX,validY,weight_map_valid = validX.cuda(), validY.cuda(),weight_map_valid.cuda()
 
-                validYPred = basic_forecaster.forward(xx_valid)
+                validYPred = basic_forecaster.forward(xx_valid)[0][0]
                 if quantile:
                     valid_loss += quantile_loss(validYPred, yy_valid, alphas, batch_mask_valid, weight_map).item()
 
