@@ -19,7 +19,7 @@ def get_target_mask(y):
     return y_copy, mask
 
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), attention = False, n_predictions =1):
 
     valid = True
     outputs_quantile = len(alphas)
@@ -70,7 +70,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
 
         train_loss, valid_loss = trainconvlstm(X_train, y_train, X_valid, y_valid, weight_map, train_mask, valid_mask,
                                            n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate,
-                                           folder_saving, model_saved, quantile,
+                                           folder_saving, model_saved, quantile,attention,
                                            alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile,
                                            valid=valid, hidden_dim=hidden_dim, num_layers=num_layers, kernel_size=kernel_size, patience=1000)
 
@@ -79,7 +79,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),n_predictions = 1):
+def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -100,6 +100,10 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     print(torch.cuda.is_available())
 
     if model_type != "ConvLSTM":
+        if model_type[-2:]=="3d":
+            X_valid = X_valid[:,  np.newaxis, :, :, :]
+            X_test = X_test[:, np.newaxis, :,: , :]
+
         basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
@@ -131,7 +135,6 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
     # y_train_pred = y_train_pred.cpu().detach().numpy()
     # np.save(folder_saving + "/" + "train_predictions.npy", y_train_pred)
 
-
     if X_test is not None:
     #    if torch.cuda.is_available():
      #       X_test = X_test.cuda()
@@ -146,10 +149,13 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
         y_test_wo_patches = y_test #eval.combine_image_patches(y_test)
         y_pred_wo_patches = y_pred #eval.combine_image_patches(y_pred)
 
-        # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
-        y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
-        test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
+        if y_test is not None:
+            np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+            y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
+            test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
+        else:
+            np.save(folder_saving + "/" + "altimeter_predictions.npy", y_pred_wo_patches)
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
@@ -169,7 +175,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
        #
         y_valid_wo_patches = y_valid #eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = y_valid_pred #eval.combine_image_patches(y_valid_pred)
-        # np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
+        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask, weight_map_wo_patches)
 

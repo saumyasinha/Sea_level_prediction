@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -36,7 +36,7 @@ test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
-model_type = "DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "ConvLSTM" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -44,28 +44,30 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 
 ## folders to finally save the model
-reg = "CNN/Unet/"
-# sub_reg = "final_cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"#"
-sub_reg = "cnn_with_2yrs_lag_unetdilated3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+reg = "CNN/Unet" #convLSTM/"# Unet"
+sub_reg = "cnn_with_more_hidden_1yr_lag_dilated_convlstm_downscaled_weighted_changed_years_not_normalized"#"
+# sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
-hidden_dim = 12
+hidden_dim = 25 #25
 num_layers=1
-kernel_size = [(3,3)]
+kernel_size = (3,3)
 
 batch_size = 6
-epochs = 200#200
+epochs = 1#200
 lr = 1e-4
 
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12*2 ##seq-length of the deep sequence models
+n_prev_months = 12 ##seq-length of the deep sequence models
 
 yearly = False  #in case you want to look at year level data instead of month level
 downscaling = True #converting 360*180 to 180*90
 include_patches = False
 include_heat = False #include the heat content feature
+attention = False
+
 
 if include_heat:
     features.extend(["heat_content"])
@@ -185,31 +187,31 @@ def main():
 
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
-        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
-        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
-        f.close()
-
-
-        #####Visualizations####################
-        #### get trend plots######
-        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
-        # # # # print(y_valid_pred.shape)
-        # # #
-        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
+        # valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
+        # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        # f.close()
         #
+        #
+        # #####Visualizations####################
+        # #### get trend plots######
+        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
+        # # # # # print(y_valid_pred.shape)
+        # # # #
+        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        # #
         # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
+        # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
         # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
-        # diff = model_trend - valid_trend
-        # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_same_y_axis", trend=True)
-        # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
-        # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map)
-
+        # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
+        # # diff = model_trend - valid_trend
+        # # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_same_y_axis", trend=True)
+        # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+        # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map, trend=True)
+        #
         # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
-        # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
+        # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
 
         ### plot true vs predicitons on best/worst rmse pts
         # mean_for_valid_period = np.mean(y_valid, axis=0)

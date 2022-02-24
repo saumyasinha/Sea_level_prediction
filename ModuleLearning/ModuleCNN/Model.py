@@ -183,7 +183,7 @@ def trainBatchwise(model_type, trainX, trainY, validX,
 
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("num of parameters in this mode:",count_parameters(basic_forecaster))
+    print("num of parameters in this model:",count_parameters(basic_forecaster))
 
 
     train_on_gpu = torch.cuda.is_available()

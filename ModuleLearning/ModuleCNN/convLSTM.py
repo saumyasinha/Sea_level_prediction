@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+from torch.autograd import Variable
 import numpy as np
 
 class EarlyStopping:
@@ -51,9 +52,80 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
+class AConvLSTMCell(nn.Module):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias=True, init_method='xavier_normal_'):
+        super(AConvLSTMCell, self).__init__()
+
+        assert hidden_dim % 2 == 0
+
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.bias = bias
+        self.kernel_size = kernel_size
+        self.init_method = init_method
+        self.padding = int((kernel_size[0] - 1) / 2), int((kernel_size[1] - 1) / 2)
+
+        self.Wxa_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
+                               1, self.padding, bias=True, groups=self.input_dim)
+        self.Wxa_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
+        self.Wha_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
+                               1, self.padding, bias=True, groups=self.input_dim)
+        self.Wha_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
+        self.Wz = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+
+        self.Wxi = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+        self.Whi = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+        self.Wxf = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+        self.Whf = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+        self.Wxc_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
+                               1, self.padding, bias=True, groups=self.input_dim)
+        self.Wxc_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
+        self.Whc_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
+                               1, self.padding, bias=False, groups=self.hidden_dim)
+        self.Whc_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
+        self.Wxo = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+        self.Who = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+
+        self.softmax = nn.Softmax(dim=2)
+        self.xgpooling = nn.AdaptiveAvgPool2d(1)
+        self.hgpooling = nn.AdaptiveAvgPool2d(1)
+        for w in self.modules():
+            if isinstance(w, nn.Conv2d):
+                getattr(nn.init, self.init_method)(w.weight)
+
+    def SoftmaxPixel_Max(self, s):
+        batch, channel, height, weight = s.size()
+        newS = self.softmax(s.view(batch, channel, -1))
+        MaxS, _ = torch.max(newS, dim=2, keepdim=True, out=None)
+        newS = newS / MaxS
+        return newS.view(batch, channel, height, weight)
+
+    def forward(self, input_tensor, cur_state):
+        h,c = cur_state
+        x = input_tensor
+        Zt = self.Wz(torch.tanh(self.Wxa_p(self.Wxa_d(x)) + self.Wha_p(self.Wha_d(h))))
+        ci = self.SoftmaxPixel_Max(Zt)
+        x_global = self.xgpooling(x)
+        h_global = self.hgpooling(h)
+        cf = torch.sigmoid(self.Wxf(x_global) + self.Whf(h_global))
+        co = torch.sigmoid(self.Wxo(x_global) + self.Who(h_global))
+        G = torch.tanh(self.Wxc_p(self.Wxc_d(x)) + self.Whc_p(self.Whc_d(h)))
+        cc = cf * c + ci * G
+        ch = co * torch.tanh(cc)
+        return ch, cc
+
+    def init_hidden(self,  batch_size, shape):
+        if torch.cuda.is_available():
+            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])).cuda(),
+                    Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1])).cuda())
+        else:
+            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])),
+                    Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])))
+
+
 class ConvLSTMCell(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =1):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =(1,2,4)):
         """
         Initialize ConvLSTM cell.
         Parameters
@@ -69,21 +141,31 @@ class ConvLSTMCell(nn.Module):
         """
 
         super(ConvLSTMCell, self).__init__()
-
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
 
         self.kernel_size = kernel_size
-        self.padding = kernel_size[0] // 2, kernel_size[1] // 2
+        self.padding =kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
         self.dilation_rate = dilation_rate
 
-        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
-                              kernel_size=self.kernel_size,
-                              dilation = self.dilation_rate,
-                              padding=self.padding,
-                              bias=self.bias)
+        # self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+        #                       out_channels=4 * self.hidden_dim,
+        #                       kernel_size=self.kernel_size,
+        #                       dilation = self.dilation_rate,
+        #                       padding=self.padding,
+        #                       bias=self.bias)
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
+            # nn.ReLU(),
+            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
+            # nn.ReLU(),
+            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
+                      dilation=self.dilation_rate[2], padding=(4,4),
+                      bias=self.bias),
+            # nn.ReLU(),
+        )
 
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
@@ -104,8 +186,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),
-                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device),
+                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device))
 
 
 class ConvLSTM(nn.Module):
@@ -134,7 +216,7 @@ class ConvLSTM(nn.Module):
         >> h = last_states[0][0]  # 0 for layer index, 0 for h index
     """
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, num_layers, last_channel_size=1,
+    def __init__(self, input_dim, hidden_dim, kernel_size, num_layers, attention=False, last_channel_size=1,
                  batch_first=False, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()
 
@@ -157,11 +239,18 @@ class ConvLSTM(nn.Module):
         cell_list = []
         for i in range(0, self.num_layers):
             cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
-
-            cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
-                                          hidden_dim=self.hidden_dim[i],
-                                          kernel_size=self.kernel_size[i],
-                                          bias=self.bias))
+            
+            if attention:
+                cell_list.append(AConvLSTMCell(input_dim=cur_input_dim,
+                                              hidden_dim=self.hidden_dim[i],
+                                              kernel_size=self.kernel_size[i],
+                                              bias=self.bias))
+                
+            else:
+                cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
+                                              hidden_dim=self.hidden_dim[i],
+                                              kernel_size=self.kernel_size[i],
+                                              bias=self.bias))
 
         self.cell_list = nn.ModuleList(cell_list)
 
@@ -250,13 +339,14 @@ class ConvLSTM(nn.Module):
 
 def trainBatchwise(trainX, trainY, validX,
                    validY, weight_map, train_mask, valid_mask, n_output_length, n_features, n_timesteps, epochs, batch_size, lr,
-                   folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, hidden_dim, num_layers, kernel_size, patience=None, verbose=None,
+                   folder_saving, model_saved, quantile, attention, alphas, outputs_quantile, valid, hidden_dim, num_layers, kernel_size, patience=None, verbose=None,
                    reg_lamdba=0):  # 0.0001):
 
     basic_forecaster = ConvLSTM(input_dim=n_features,
                                 hidden_dim=hidden_dim,
                                 kernel_size=kernel_size,
                                 num_layers=num_layers,
+                                attention=attention,
                                 batch_first=True,
                                 bias=True,
                                 return_all_layers=False)
@@ -265,7 +355,7 @@ def trainBatchwise(trainX, trainY, validX,
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    print("num of parameters in this mode:", count_parameters(basic_forecaster))
+    print("num of parameters in this model:", count_parameters(basic_forecaster))
 
     train_on_gpu = torch.cuda.is_available()
     print(train_on_gpu)
@@ -313,7 +403,7 @@ def trainBatchwise(trainX, trainY, validX,
             if train_on_gpu:
                 xx, yy = xx.cuda(), yy.cuda()
 
-            outputs = basic_forecaster.forward(xx)
+            outputs = basic_forecaster.forward(xx)[0][0]
             optimizer.zero_grad()
             if quantile:
                 loss = quantile_loss(outputs, yy, alphas, batch_mask, weight_map)
@@ -351,7 +441,7 @@ def trainBatchwise(trainX, trainY, validX,
                     xx_valid, yy_valid = xx_valid.cuda(), yy_valid.cuda()
                     # validX,validY,weight_map_valid = validX.cuda(), validY.cuda(),weight_map_valid.cuda()
 
-                validYPred = basic_forecaster.forward(xx_valid)
+                validYPred = basic_forecaster.forward(xx_valid)[0][0]
                 if quantile:
                     valid_loss += quantile_loss(validYPred, yy_valid, alphas, batch_mask_valid, weight_map).item()
 

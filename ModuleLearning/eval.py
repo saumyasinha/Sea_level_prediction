@@ -1,12 +1,12 @@
 import numpy as np
 from math import sqrt
-#import netCDF4
+import netCDF4
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-#import cartopy.crs as ccrs
-#from matplotlib.colors import TwoSlopeNorm, Normalize
+import cartopy.crs as ccrs
+from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
-#from cartopy.util import add_cyclic_point
+from cartopy.util import add_cyclic_point
 
 
 
@@ -45,7 +45,7 @@ def fit_trend(pred, mask, yearly = False):
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    x = list(range(2041,2071))
+    x = list(range(2024,2050)) #list(range(2041,2071))
     mid_x = np.mean(x)
     x = np.asarray([i-mid_x for i in x])
 
@@ -99,6 +99,7 @@ def fit_trend(pred, mask, yearly = False):
                 # print(fitted_all_coeffs)
                 fitted_coeff[i,j] = fitted_all_coeffs[1]
 
+
     return fitted_coeff
 
 def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
@@ -142,8 +143,8 @@ def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
 
 def plot(xr, folder_saving, save_file, trend =False, index = None):
 
-    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/1850-2014/nc_files/historical_CESM1LE_zos_fr_1850_2014.bin.nc"
-    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
+    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Observations/nc_files/altimeter2deg.nc"
+    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
     # for var in dataset.variables.values():
@@ -175,10 +176,10 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     lats =dataset.variables['lat'][:]
     print(lats.shape)
-    lats = block_reduce(lats, (2,), np.mean)
+    # lats = block_reduce(lats, (2,), np.mean)
     print(lats.min(), lats.max(), lats.shape)
     lons = dataset.variables['lon'][:]
-    lons = block_reduce(lons, (2,), np.mean)
+    # lons = block_reduce(lons, (2,), np.mean)
     print(lons.min(), lons.max(), lons.shape)
 
     zos, lons = add_cyclic_point(zos, coord=lons)
@@ -186,7 +187,7 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
     v_min=-2 #zos.min()
-    v_max=2 #zos.max()
+    v_max=3#zos.max()
     levels = np.linspace(v_min, v_max, 60)
     # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,
