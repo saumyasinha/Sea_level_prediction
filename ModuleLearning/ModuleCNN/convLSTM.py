@@ -244,6 +244,7 @@ class SAConvLSTMCell(nn.Module):
         self.hidden_state, self.memory_state = self.sa(self.hidden_state, self.memory_state)
         return self.hidden_state, self.cell_state
 
+
 class ConvLSTMCell(nn.Module):
 
     def __init__(self, input_dim, hidden_dim, kernel_size, bias, dilation_rate =(1,2,4)):
@@ -290,6 +291,7 @@ class ConvLSTMCell(nn.Module):
         # )
 
 
+
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
@@ -309,9 +311,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),
+        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),  # conv[0]
                 torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
-
 
 class ConvLSTM(nn.Module):
 
