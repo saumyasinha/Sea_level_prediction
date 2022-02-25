@@ -110,6 +110,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
                                     hidden_dim=hidden_dim,
                                     kernel_size=kernel_size,
                                     num_layers=num_layers,
+                                    attention=attention,
                                     batch_first=True,
                                     bias=True,
                                     return_all_layers=False)
@@ -150,7 +151,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
         y_pred_wo_patches = y_pred #eval.combine_image_patches(y_pred)
 
         if y_test is not None:
-            np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+            # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
             y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
             test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 

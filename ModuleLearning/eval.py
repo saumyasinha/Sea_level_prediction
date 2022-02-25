@@ -1,12 +1,12 @@
 import numpy as np
 from math import sqrt
-#import netCDF4
-import matplotlib.pyplot as plt
+# import netCDF4
+# import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-#import cartopy.crs as ccrs
-from matplotlib.colors import TwoSlopeNorm, Normalize
+# import cartopy.crs as ccrs
+# from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
-#from cartopy.util import add_cyclic_point
+# from cartopy.util import add_cyclic_point
 
 
 
@@ -45,7 +45,7 @@ def fit_trend(pred, mask, yearly = False):
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    x = list(range(2024,2050)) #list(range(2041,2071))
+    x = list(range(2041,2071)) #list(range(2024,2050)) #
     mid_x = np.mean(x)
     x = np.asarray([i-mid_x for i in x])
 
@@ -187,7 +187,7 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
     # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
     v_min=-2 #zos.min()
-    v_max=3#zos.max()
+    v_max=2 #zos.max()
     levels = np.linspace(v_min, v_max, 60)
     # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,

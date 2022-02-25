@@ -1,5 +1,7 @@
 import torch.nn as nn
 import torch
+import math
+import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
@@ -51,77 +53,196 @@ class EarlyStopping:
             torch.save(model.state_dict(), self.saving_path)
         self.val_loss_min = val_loss
 
+#
+# class AConvLSTMCell(nn.Module):
+#     def __init__(self, input_dim, hidden_dim, kernel_size, bias=True, init_method='xavier_normal_'):
+#         super(AConvLSTMCell, self).__init__()
+#
+#         assert hidden_dim % 2 == 0
+#
+#         self.input_dim = input_dim
+#         self.hidden_dim = hidden_dim
+#         self.bias = bias
+#         self.kernel_size = kernel_size
+#         self.init_method = init_method
+#         self.padding = int((kernel_size[0] - 1) / 2), int((kernel_size[1] - 1) / 2)
+#
+#         # self.Wxa_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
+#         #                        1, self.padding, bias=True, groups=self.input_dim)
+#         # self.Wxa_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
+#         # self.Wha_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
+#         #                        1, self.padding, bias=True, groups=self.input_dim)
+#         # self.Wha_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
+#         # self.Wz = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+#         #
+#         # self.Wxi = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+#         # self.Whi = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+#         # self.Wxf = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+#         # self.Whf = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+#         # self.Wxc_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
+#         #                        1, self.padding, bias=True, groups=self.input_dim)
+#         # self.Wxc_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
+#         # self.Whc_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
+#         #                        1, self.padding, bias=False, groups=self.hidden_dim)
+#         # self.Whc_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
+#         # self.Wxo = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
+#         # self.Who = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+#         #
+#         # self.softmax = nn.Softmax(dim=2)
+#         # self.xgpooling = nn.AdaptiveAvgPool2d(1)
+#         # self.hgpooling = nn.AdaptiveAvgPool2d(1)
+#         # for w in self.modules():
+#         #     if isinstance(w, nn.Conv2d):
+#         #         getattr(nn.init, self.init_method)(w.weight)
+#         self.Wxi = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+#         self.Whi = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+#         self.Wxf = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+#         self.Whf = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+#         self.Wxc_d = nn.Conv2d(self.input_channels, self.input_channels, self.kernel_size, \
+#                                1, self.padding, bias=True, groups=self.input_channels)
+#         self.Wxc_p = nn.Conv2d(self.input_channels, self.hidden_channels, (1, 1), 1, 0, bias=False)
+#         self.Whc_d = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, \
+#                                1, self.padding, bias=False, groups=self.hidden_channels)
+#         self.Whc_p = nn.Conv2d(self.hidden_channels, self.hidden_channels, (1, 1), 1, 0, bias=False)
+#         self.Wxo = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+#         self.Who = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+#
+#         self.xgpooling = nn.AdaptiveAvgPool2d(1)
+#         self.hgpooling = nn.AdaptiveAvgPool2d(1)
+#
+#         for w in self.modules():
+#             if isinstance(w, nn.Conv2d):
+#                 getattr(nn.init, self.init_method)(w.weight)
+#
+#     # def SoftmaxPixel_Max(self, s):
+#     #     batch, channel, height, weight = s.size()
+#     #     newS = self.softmax(s.view(batch, channel, -1))
+#     #     MaxS, _ = torch.max(newS, dim=2, keepdim=True, out=None)
+#     #     newS = newS / MaxS
+#     #     return newS.view(batch, channel, height, weight)
+#
+#     def forward(self, input_tensor, cur_state):
+#         h,c = cur_state
+#         x = input_tensor
+#         # Zt = self.Wz(torch.tanh(self.Wxa_p(self.Wxa_d(x)) + self.Wha_p(self.Wha_d(h))))
+#         # ci = self.SoftmaxPixel_Max(Zt)
+#         # x_global = self.xgpooling(x)
+#         # h_global = self.hgpooling(h)
+#         # cf = torch.sigmoid(self.Wxf(x_global) + self.Whf(h_global))
+#         # co = torch.sigmoid(self.Wxo(x_global) + self.Who(h_global))
+#         # G = torch.tanh(self.Wxc_p(self.Wxc_d(x)) + self.Whc_p(self.Whc_d(h)))
+#         # cc = cf * c + ci * G
+#         # ch = co * torch.tanh(cc)
+#         # return ch, cc
+#         x_global = self.xgpooling(x)
+#         h_global = self.hgpooling(h)
+#         ci = torch.sigmoid(self.Wxi(x_global) + self.Whi(h_global))
+#         cf = torch.sigmoid(self.Wxf(x_global) + self.Whf(h_global))
+#         co = torch.sigmoid(self.Wxo(x_global) + self.Who(h_global))
+#         G = torch.tanh(self.Wxc_p(self.Wxc_d(x)) + self.Whc_p(self.Whc_d(h)))
+#         cc = cf * c + ci * G
+#         ch = co * torch.tanh(cc)
+#         return ch, cc
+#
+#     def init_hidden(self,  batch_size, shape):
+#         # if torch.cuda.is_available():
+#         return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1], device=self.Wxo.weight.device)),
+#                 Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1],  device=self.Wxo.weight.device)))
+#         # else:
+#         #     return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])),
+#         #             Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])))
 
-class AConvLSTMCell(nn.Module):
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias=True, init_method='xavier_normal_'):
-        super(AConvLSTMCell, self).__init__()
+def attn(query, key, value):
+    """
+    Apply attention over the spatial dimension (S)
+    Args:
+        query, key, value: (N, C, S)
+    Returns:
+        output of the same size
+    """
+    scores = query.transpose(1, 2) @ key / math.sqrt(query.size(1))  # (N, S, S)
+    attn = F.softmax(scores, dim=-1)
+    output = attn @ value.transpose(1, 2)
+    return output.transpose(1, 2)  # (N, C, S)
 
-        assert hidden_dim % 2 == 0
 
+class SAAttnMem(nn.Module):
+    def __init__(self, input_dim, d_model, kernel_size):
+        """
+        The self-attention memory module added to ConvLSTM
+        """
+        super().__init__()
+        pad = kernel_size[0] // 2, kernel_size[1] // 2
+        self.d_model = d_model
+        self.input_dim = input_dim
+        self.conv_h = nn.Conv2d(input_dim, d_model*3, kernel_size=1)
+        self.conv_m = nn.Conv2d(input_dim, d_model*2, kernel_size=1)
+        self.conv_z = nn.Conv2d(d_model*2, d_model, kernel_size=1)
+        self.conv_output = nn.Conv2d(input_dim+d_model, input_dim*3, kernel_size=kernel_size, padding=pad)
+
+    def forward(self, h, m):
+        hq, hk, hv = torch.split(self.conv_h(h), self.d_model, dim=1)
+        mk, mv = torch.split(self.conv_m(m), self.d_model, dim=1)
+        N, C, H, W = hq.size()
+        Zh = attn(hq.view(N, C, -1), hk.view(N, C, -1), hv.view(N, C, -1))  # (N, S, C)
+        Zm = attn(hq.view(N, C, -1), mk.view(N, C, -1), mv.view(N, C, -1))  # (N, S, C)
+        Z = self.conv_z(torch.cat([Zh.view(N, C, H, W), Zm.view(N, C, H, W)], dim=1))
+        i, g, o = torch.split(self.conv_output(torch.cat([Z, h], dim=1)), self.input_dim, dim=1)
+        i = torch.sigmoid(i)
+        g = torch.tanh(g)
+        m_next = i * g + (1 - i) * m
+        h_next = torch.sigmoid(o) * m_next
+        return h_next, m_next
+
+
+class SAConvLSTMCell(nn.Module):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, d_attn=24):
+        """
+        The SA-ConvLSTM cell module. Same as the ConvLSTM cell except with the
+        self-attention memory module and the M added
+        """
+        super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.bias = bias
-        self.kernel_size = kernel_size
-        self.init_method = init_method
-        self.padding = int((kernel_size[0] - 1) / 2), int((kernel_size[1] - 1) / 2)
+        pad = kernel_size[0] // 2, kernel_size[1] // 2
 
-        self.Wxa_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
-                               1, self.padding, bias=True, groups=self.input_dim)
-        self.Wxa_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
-        self.Wha_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
-                               1, self.padding, bias=True, groups=self.input_dim)
-        self.Wha_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=False)
-        self.Wz = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+        self.conv = nn.Conv2d(in_channels=input_dim + hidden_dim,
+                              out_channels=4 * hidden_dim,
+                              kernel_size=kernel_size,
+                              padding=pad,
+                              bias = bias
+                              )
+        self.sa = SAAttnMem(input_dim=hidden_dim, d_model=d_attn, kernel_size=kernel_size)
 
-        self.Wxi = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
-        self.Whi = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
-        self.Wxf = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
-        self.Whf = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
-        self.Wxc_d = nn.Conv2d(self.input_dim, self.input_dim, self.kernel_size, \
-                               1, self.padding, bias=True, groups=self.input_dim)
-        self.Wxc_p = nn.Conv2d(self.input_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
-        self.Whc_d = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, \
-                               1, self.padding, bias=False, groups=self.hidden_dim)
-        self.Whc_p = nn.Conv2d(self.hidden_dim, self.hidden_dim, (1, 1), 1, 0, bias=True)
-        self.Wxo = nn.Conv2d(self.input_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=True)
-        self.Who = nn.Conv2d(self.hidden_dim, self.hidden_dim, self.kernel_size, 1, self.padding, bias=False)
+    def init_hidden(self, batch_size, image_size):
+        device = self.conv.weight.device
+        height, width = image_size
 
-        self.softmax = nn.Softmax(dim=2)
-        self.xgpooling = nn.AdaptiveAvgPool2d(1)
-        self.hgpooling = nn.AdaptiveAvgPool2d(1)
-        for w in self.modules():
-            if isinstance(w, nn.Conv2d):
-                getattr(nn.init, self.init_method)(w.weight)
+        self.hidden_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
+        self.cell_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
+        self.memory_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
 
-    def SoftmaxPixel_Max(self, s):
-        batch, channel, height, weight = s.size()
-        newS = self.softmax(s.view(batch, channel, -1))
-        MaxS, _ = torch.max(newS, dim=2, keepdim=True, out=None)
-        newS = newS / MaxS
-        return newS.view(batch, channel, height, weight)
+        return (self.hidden_state,self.cell_state)
 
     def forward(self, input_tensor, cur_state):
-        h,c = cur_state
-        x = input_tensor
-        Zt = self.Wz(torch.tanh(self.Wxa_p(self.Wxa_d(x)) + self.Wha_p(self.Wha_d(h))))
-        ci = self.SoftmaxPixel_Max(Zt)
-        x_global = self.xgpooling(x)
-        h_global = self.hgpooling(h)
-        cf = torch.sigmoid(self.Wxf(x_global) + self.Whf(h_global))
-        co = torch.sigmoid(self.Wxo(x_global) + self.Who(h_global))
-        G = torch.tanh(self.Wxc_p(self.Wxc_d(x)) + self.Whc_p(self.Whc_d(h)))
-        cc = cf * c + ci * G
-        ch = co * torch.tanh(cc)
-        return ch, cc
+        # if first_step:
+        #     self.initialize(inputs)
+        # h_cur, c_cur = cur_state
+        combined = torch.cat([input_tensor, self.hidden_state], dim=1)
 
-    def init_hidden(self,  batch_size, shape):
-        if torch.cuda.is_available():
-            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])).cuda(),
-                    Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1])).cuda())
-        else:
-            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])),
-                    Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])))
+        combined_conv = self.conv(combined)
+        cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
+        i = torch.sigmoid(cc_i)
+        f = torch.sigmoid(cc_f)
+        o = torch.sigmoid(cc_o)
+        g = torch.tanh(cc_g)
 
+        self.cell_state = f * self.cell_state + i * g
+        self.hidden_state = o * torch.tanh(self.cell_state)
+        # novel for sa-convlstm
+        self.hidden_state, self.memory_state = self.sa(self.hidden_state, self.memory_state)
+        return self.hidden_state, self.cell_state
 
 class ConvLSTMCell(nn.Module):
 
@@ -150,24 +271,23 @@ class ConvLSTMCell(nn.Module):
         self.dilation_rate = dilation_rate
 
 
-        # self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-        #                       out_channels=4 * self.hidden_dim,
-        #                       kernel_size=self.kernel_size,
-        #                       dilation = self.dilation_rate,
-        #                       padding=self.padding,
-        #                       bias=self.bias)
+        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+                              out_channels=4 * self.hidden_dim,
+                              kernel_size=self.kernel_size,
+                              padding=self.padding,
+                              bias=self.bias)
 
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
-            # nn.ReLU(),
-            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
-            # nn.ReLU(),
-            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
-                      dilation=self.dilation_rate[2], padding=(4,4),
-                      bias=self.bias),
-            # nn.ReLU(),
-        )
+        # self.conv = nn.Sequential(
+        #     nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
+        #     # nn.ReLU(),
+        #     nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
+        #     # nn.ReLU(),
+        #     nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
+        #               dilation=self.dilation_rate[2], padding=(4,4),
+        #               bias=self.bias),
+        #     # nn.ReLU(),
+        # )
 
 
     def forward(self, input_tensor, cur_state):
@@ -189,8 +309,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device),
-                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),
+                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
 
 
 class ConvLSTM(nn.Module):
@@ -244,11 +364,11 @@ class ConvLSTM(nn.Module):
             cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
             
             if attention:
-                cell_list.append(AConvLSTMCell(input_dim=cur_input_dim,
+                cell_list.append(SAConvLSTMCell(input_dim=cur_input_dim,
                                               hidden_dim=self.hidden_dim[i],
                                               kernel_size=self.kernel_size[i],
                                               bias=self.bias))
-                
+
             else:
                 cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
                                               hidden_dim=self.hidden_dim[i],
