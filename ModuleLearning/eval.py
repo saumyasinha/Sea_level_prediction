@@ -4,7 +4,7 @@ from math import sqrt
 import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
 #import cartopy.crs as ccrs
-from matplotlib.colors import TwoSlopeNorm, Normalize
+#from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
 #from cartopy.util import add_cyclic_point
 

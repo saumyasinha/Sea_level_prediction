@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -46,13 +46,13 @@ q50 = 9
 ## folders to finally save the model
 
 reg = "CNN/convLSTM/"# Unet"
-sub_reg = "cnn_with_more_hidden_1yr_lag_dilated_convlstm_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "_cnn_with_1yrlag_attn_24hidden_2layers_convlstm_downscaled_weighted_changed_years_not_normalized"#"
 # sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 #"_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
-hidden_dim = 25
-num_layers=1
+hidden_dim = 24
+num_layers=2
 kernel_size = (3,3)
 
 batch_size = 6
@@ -67,7 +67,7 @@ yearly = False  #in case you want to look at year level data instead of month le
 downscaling = True #converting 360*180 to 180*90
 include_patches = False
 include_heat = False #include the heat content feature
-attention = False
+attention = True
 
 
 if include_heat:
@@ -188,11 +188,11 @@ def main():
 
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-        # train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
+        #train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
         valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
-        # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-        # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
-        # f.close()
+        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        f.close()
         #
         #
         # #####Visualizations####################

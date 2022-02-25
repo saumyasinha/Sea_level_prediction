@@ -92,6 +92,25 @@ class AConvLSTMCell(nn.Module):
         for w in self.modules():
             if isinstance(w, nn.Conv2d):
                 getattr(nn.init, self.init_method)(w.weight)
+        #self.Wxi = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+        #self.Whi = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+        #self.Wxf = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+        #self.Whf = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+        #self.Wxc_d = nn.Conv2d(self.input_channels, self.input_channels, self.kernel_size, \
+         #                      1, self.padding, bias=True, groups=self.input_channels)
+        #self.Wxc_p = nn.Conv2d(self.input_channels, self.hidden_channels, (1, 1), 1, 0, bias=False)
+        #self.Whc_d = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, \
+         #                      1, self.padding, bias=False, groups=self.hidden_channels)
+        #self.Whc_p = nn.Conv2d(self.hidden_channels, self.hidden_channels, (1, 1), 1, 0, bias=False)
+        #self.Wxo = nn.Conv2d(self.input_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=True)
+        #self.Who = nn.Conv2d(self.hidden_channels, self.hidden_channels, self.kernel_size, 1, self.padding, bias=False)
+
+        #self.xgpooling = nn.AdaptiveAvgPool2d(1)
+        #self.hgpooling = nn.AdaptiveAvgPool2d(1)
+
+        #for w in self.modules():
+         #   if isinstance(w, nn.Conv2d):
+          #      getattr(nn.init, self.init_method)(w.weight)
 
     def SoftmaxPixel_Max(self, s):
         batch, channel, height, weight = s.size()
@@ -113,15 +132,25 @@ class AConvLSTMCell(nn.Module):
         cc = cf * c + ci * G
         ch = co * torch.tanh(cc)
         return ch, cc
+      #  x_global = self.xgpooling(x)
+       # h_global = self.hgpooling(h)
+       # ci = torch.sigmoid(self.Wxi(x_global) + self.Whi(h_global))
+      #  cf = torch.sigmoid(self.Wxf(x_global) + self.Whf(h_global))
+      #  co = torch.sigmoid(self.Wxo(x_global) + self.Who(h_global))
+      #  G = torch.tanh(self.Wxc_p(self.Wxc_d(x)) + self.Whc_p(self.Whc_d(h)))
+      #  cc = cf * c + ci * G
+      #  ch = co * torch.tanh(cc)
+      #  return ch, cc
 
     def init_hidden(self,  batch_size, shape):
-        if torch.cuda.is_available():
-            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])).cuda(),
-                    Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1])).cuda())
-        else:
-            return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])),
-                    Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])))
-
+        #if torch.cuda.is_available():
+         #   return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])).cuda(),
+          #          Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1])).cuda())
+        #else:
+         #   return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])),
+          #          Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1])))
+        return (Variable(torch.zeros(batch_size, self.hidden_dim, shape[0], shape[1], device=self.Wxo.weight.device)),
+                Variable(torch.zeros(batch_size, self. hidden_dim, shape[0], shape[1],  device=self.Wxo.weight.device)))
 
 class ConvLSTMCell(nn.Module):
 
@@ -150,24 +179,23 @@ class ConvLSTMCell(nn.Module):
         self.dilation_rate = dilation_rate
 
 
-        # self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-        #                       out_channels=4 * self.hidden_dim,
-        #                       kernel_size=self.kernel_size,
-        #                       dilation = self.dilation_rate,
-        #                       padding=self.padding,
-        #                       bias=self.bias)
+        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+                               out_channels=4 * self.hidden_dim,
+                              kernel_size=self.kernel_size,
+                               padding=self.padding,
+                               bias=self.bias)
 
 
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
-            # nn.ReLU(),
-            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
-            # nn.ReLU(),
-            nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
-                      dilation=self.dilation_rate[2], padding=(4,4),
-                      bias=self.bias),
-            # nn.ReLU(),
-        )
+        #self.conv = nn.Sequential(
+         #   nn.Conv2d(in_channels = self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[0], padding=self.padding, bias = self.bias),
+          #  # nn.ReLU(),
+           # nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size, dilation=self.dilation_rate[1], padding=(2,2), bias=self.bias),
+            ## nn.ReLU(),
+           # nn.Conv2d(4 * self.hidden_dim, 4 * self.hidden_dim, kernel_size=self.kernel_size,
+            #          dilation=self.dilation_rate[2], padding=(4,4),
+             #         bias=self.bias),
+            ## nn.ReLU(),
+        #)
 
 
     def forward(self, input_tensor, cur_state):
@@ -189,8 +217,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device),
-                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv[0].weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device),#conv[0]
+                torch.zeros(batch_size, self.hidden_dim, height, width, device=self.conv.weight.device))
 
 
 class ConvLSTM(nn.Module):

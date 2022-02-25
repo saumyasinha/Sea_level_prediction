@@ -110,6 +110,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
                                     hidden_dim=hidden_dim,
                                     kernel_size=kernel_size,
                                     num_layers=num_layers,
+                                    attention=attention,
                                     batch_first=True,
                                     bias=True,
                                     return_all_layers=False)
