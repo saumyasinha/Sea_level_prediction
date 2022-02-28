@@ -196,7 +196,7 @@ class SAAttnMem(nn.Module):
 
 
 class SAConvLSTMCell(nn.Module):
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias, d_attn=24):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, d_attn=3):
         """
         The SA-ConvLSTM cell module. Same as the ConvLSTM cell except with the
         self-attention memory module and the M added

@@ -47,10 +47,10 @@ q50 = 9
 
 reg = "CNN/convLSTM/"# Unet"
 
-# sub_reg = "_cnn_with_1yrlag_2layers_convlstm_24hidden_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "_cnn_with_1yrlag_2layers_conv_and_convlstm_24hidden_downscaled_weighted_changed_years_not_normalized"#"
 # sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 #"_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "trail"
+
 
 ## Hyperparameters
 hidden_dim = 24
