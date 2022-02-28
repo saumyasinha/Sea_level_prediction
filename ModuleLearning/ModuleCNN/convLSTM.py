@@ -228,23 +228,6 @@ class SAConvLSTMCell(nn.Module):
     def forward(self, input_tensor, cur_state):
         # if first_step:
         #     self.initialize(inputs)
-        # h_cur, c_cur = cur_state
-        #combined = torch.cat([input_tensor, self.hidden_state], dim=1)
-
-        #combined_conv = self.conv(combined)
-        #cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
-        #i = torch.sigmoid(cc_i)
-        #f = torch.sigmoid(cc_f)
-        #o = torch.sigmoid(cc_o)
-        #g = torch.tanh(cc_g)
-
-        #self.cell_state = f * self.cell_state + i * g
-        #self.hidden_state = o * torch.tanh(self.cell_state)
-        # novel for sa-convlstm
-        #self.hidden_state, self.memory_state = self.sa(self.hidden_state, self.memory_state)
-        #return self.hidden_state, self.cell_state
-        # if first_step:
-        #     self.initialize(inputs)
         h_cur, c_cur = cur_state
         combined = torch.cat([input_tensor, h_cur], dim=1)
 
@@ -378,9 +361,21 @@ class ConvLSTM(nn.Module):
         self.return_all_layers = return_all_layers
 
         cell_list = []
+
+        self.initial_conv = nn.Sequential(
+            nn.Conv2d(self.input_dim, self.input_dim*16, kernel_size=3, padding=1),
+            nn.BatchNorm2d(self.input_dim*16),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.input_dim*16, self.input_dim * 16, kernel_size=3, padding=1),
+            nn.BatchNorm2d(self.input_dim * 16),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2))
+
+
         for i in range(0, self.num_layers):
-            cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
-            
+            cur_input_dim = self.input_dim*16 if i == 0 else self.hidden_dim[i - 1]
+
+
             if attention:
                 cell_list.append(SAConvLSTMCell(input_dim=cur_input_dim,
                                               hidden_dim=self.hidden_dim[i],
@@ -395,7 +390,8 @@ class ConvLSTM(nn.Module):
 
         self.cell_list = nn.ModuleList(cell_list)
 
-        self.conv_last = nn.Conv2d(self.hidden_dim[-1], last_channel_size, 1)
+        # self.conv_last = nn.Conv2d(self.hidden_dim[-1], last_channel_size, 1)
+        self.conv_last = nn.ConvTranspose2d(self.hidden_dim[-1],last_channel_size, kernel_size=2, stride=2)
 
     def forward(self, input_tensor, hidden_state=None):
         """
@@ -421,7 +417,7 @@ class ConvLSTM(nn.Module):
         else:
             # Since the init is done in forward. Can send image size here
             hidden_state = self._init_hidden(batch_size=b,
-                                             image_size=(h, w))
+                                             image_size=(h//2, w//2))
 
         # layer_output_list = []
         last_state_list = []
@@ -434,9 +430,16 @@ class ConvLSTM(nn.Module):
             h, c = hidden_state[layer_idx]
             output_inner = []
             for t in range(seq_len):
-                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :, :],
+
+                if layer_idx==0:
+                    input = self.initial_conv(cur_layer_input[:, t, :, :, :])
+                else:
+                    input = cur_layer_input[:, t, :, :, :]
+
+                h, c = self.cell_list[layer_idx](input_tensor=input,
                                                  cur_state=[h, c])
                 output_inner.append(h)
+
 
             layer_output = torch.stack(output_inner, dim=1)
             cur_layer_input = layer_output

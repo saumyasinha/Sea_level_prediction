@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -47,13 +47,14 @@ q50 = 9
 
 reg = "CNN/convLSTM/"# Unet"
 
-sub_reg = "_cnn_with_1yrlag_SAconvlstm_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "_cnn_with_1yrlag_2layers_conv_and_convlstm_24hidden_downscaled_weighted_changed_years_not_normalized"#"
 # sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 #"_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
+
 ## Hyperparameters
-hidden_dim = 12
-num_layers=1
+hidden_dim = 24
+num_layers=2
 
 kernel_size = (3,3)
 
@@ -200,21 +201,21 @@ def main():
         # #####Visualizations####################
         # #### get trend plots######
         # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
-        # # # # # print(y_valid_pred.shape)
-        # # # #
+        # # # # # # print(y_valid_pred.shape)
+        # # # # #
         # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-        # #
+        # # #
         # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-        # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
+        # # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_same_yaxis", trend=True)
         # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-        # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
-        # # diff = model_trend - valid_trend
-        # # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_same_y_axis", trend=True)
-        # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+        # # eval.plot(model_trend, folder_saving, "model_trend_2041-2070_same_y_axis", trend=True)
+        # # # diff = model_trend - valid_trend
+        # # # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_same_y_axis", trend=True)
+        # # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
         # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map, trend=True)
-        #
+        # #
         # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
-        # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
+        # # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
 
         ### plot true vs predicitons on best/worst rmse pts
         # mean_for_valid_period = np.mean(y_valid, axis=0)
