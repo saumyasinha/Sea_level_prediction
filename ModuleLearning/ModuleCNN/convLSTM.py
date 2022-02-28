@@ -196,7 +196,7 @@ class SAAttnMem(nn.Module):
 
 
 class SAConvLSTMCell(nn.Module):
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias, d_attn=24):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, d_attn=3):
         """
         The SA-ConvLSTM cell module. Same as the ConvLSTM cell except with the
         self-attention memory module and the M added
@@ -219,17 +219,34 @@ class SAConvLSTMCell(nn.Module):
         device = self.conv.weight.device
         height, width = image_size
 
-        self.hidden_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
-        self.cell_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
+        hidden_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
+        cell_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
         self.memory_state = torch.zeros(batch_size, self.hidden_dim, height, width, device=device)
 
-        return (self.hidden_state,self.cell_state)
+        return (hidden_state,cell_state)
 
     def forward(self, input_tensor, cur_state):
         # if first_step:
         #     self.initialize(inputs)
         # h_cur, c_cur = cur_state
-        combined = torch.cat([input_tensor, self.hidden_state], dim=1)
+        #combined = torch.cat([input_tensor, self.hidden_state], dim=1)
+
+        #combined_conv = self.conv(combined)
+        #cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
+        #i = torch.sigmoid(cc_i)
+        #f = torch.sigmoid(cc_f)
+        #o = torch.sigmoid(cc_o)
+        #g = torch.tanh(cc_g)
+
+        #self.cell_state = f * self.cell_state + i * g
+        #self.hidden_state = o * torch.tanh(self.cell_state)
+        # novel for sa-convlstm
+        #self.hidden_state, self.memory_state = self.sa(self.hidden_state, self.memory_state)
+        #return self.hidden_state, self.cell_state
+        # if first_step:
+        #     self.initialize(inputs)
+        h_cur, c_cur = cur_state
+        combined = torch.cat([input_tensor, h_cur], dim=1)
 
         combined_conv = self.conv(combined)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
@@ -238,11 +255,11 @@ class SAConvLSTMCell(nn.Module):
         o = torch.sigmoid(cc_o)
         g = torch.tanh(cc_g)
 
-        self.cell_state = f * self.cell_state + i * g
-        self.hidden_state = o * torch.tanh(self.cell_state)
+        c_next = f * c_cur + i * g
+        h_next = o * torch.tanh(c_next)
         # novel for sa-convlstm
-        self.hidden_state, self.memory_state = self.sa(self.hidden_state, self.memory_state)
-        return self.hidden_state, self.cell_state
+        h_next_sa, self.memory_state = self.sa(h_next, self.memory_state)
+        return h_next_sa,c_next
 
 
 class ConvLSTMCell(nn.Module):
