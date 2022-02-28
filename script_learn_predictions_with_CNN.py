@@ -69,7 +69,7 @@ yearly = False  #in case you want to look at year level data instead of month le
 downscaling = True #converting 360*180 to 180*90
 include_patches = False
 include_heat = False #include the heat content feature
-attention = True
+attention = False
 
 
 if include_heat:
