@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -36,7 +36,7 @@ test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
-model_type = "ConvLSTM" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -45,16 +45,16 @@ q50 = 9
 
 ## folders to finally save the model
 
-reg = "CNN/convLSTM/"# Unet"
+reg = "CNN/Unet/"# Unet"
 
-sub_reg = "_cnn_with_1yrlag_2layers_conv_and_convlstm_24hidden_downscaled_weighted_changed_years_not_normalized"#"
-# sub_reg = "cnn_with_2yrs_lag_large_batchnorm_unet3d_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+#sub_reg = "_cnn_with_1yrlag_conv_and_24hide_SAconvlstm_downscaled_weighted_changed_years_not_normalized"#"
+sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 #"_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
-hidden_dim = 24
-num_layers=2
+hidden_dim = 24 #40 #24
+num_layers=1 #1
 
 kernel_size = (3,3)
 

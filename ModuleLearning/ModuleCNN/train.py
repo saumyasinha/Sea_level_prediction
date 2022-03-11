@@ -117,8 +117,9 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
 
     # basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved)) #, map_location=torch.device('cpu'))
     #if torch.cuda.is_available():
+     #   basic_forecaster = basic_forecaster.cuda()
       #  basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved))
-    #if not torch.cuda.is_available():
+    #else:
     basic_forecaster.load_state_dict(torch.load(folder_saving + model_saved, map_location=torch.device('cpu')))
 
     basic_forecaster.eval()
