@@ -7,8 +7,9 @@
 #SBATCH --gres=gpu:2
 #SBATCH --qos=preemptable
 #SBATCH --nodes=1
-#SBATCH --ntasks=32
-#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm_SAAconvlstm_1yr_lag_downscaled_future_data_and_weights.%j.out
+##SBATCH --mem-per-cpu=8g
+#SBATCH --ntasks=50
+#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm_conv_and_SAconvlstm_1yr_lag_downscaled_future_data_and_weights.%j.out
 
 
 # === 3. Purge and load needed modules ===

@@ -9,7 +9,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_local
+path_project = path_cluster
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -49,12 +49,13 @@ reg = "CNN/Unet/"# Unet"
 
 # sub_reg = "_cnn_with_32dim_1yrlag_conv_and_convlstm_downscaled_weighted_changed_years_not_normalized"#"
 sub_reg = "cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+
 #"_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
 
 
 ## Hyperparameters
-hidden_dim = 24
-num_layers=2
+hidden_dim = 24 #40 #24
+num_layers=1 #1
 
 kernel_size = (3,3)
 
