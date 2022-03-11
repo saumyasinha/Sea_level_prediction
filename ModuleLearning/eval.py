@@ -1,12 +1,16 @@
 import numpy as np
 from math import sqrt
-# import netCDF4
-# import matplotlib.pyplot as plt
+import netCDF4
+import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-# import cartopy.crs as ccrs
-# from matplotlib.colors import TwoSlopeNorm, Normalize
+import cartopy.crs as ccrs
+from matplotlib.colors import TwoSlopeNorm, Normalize
 from skimage.measure import block_reduce
-# from cartopy.util import add_cyclic_point
+from cartopy.util import add_cyclic_point
+from sklearn import linear_model
+import pickle
+from sklearn.preprocessing import PolynomialFeatures
+
 
 
 
@@ -40,12 +44,12 @@ def evaluation_metrics(pred, target, mask, weight_map, trend = False):
     return rmse, mae
 
 
-def fit_trend(pred, mask, yearly = False):
+def fit_trend(pred, mask, yearly = False, year_range=range(2041,2071)):
 
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
-    x = list(range(2041,2071)) #list(range(2024,2050)) #
+    x = list(year_range) #list(range(2041,2071)) #
     mid_x = np.mean(x)
     x = np.asarray([i-mid_x for i in x])
 
@@ -143,8 +147,8 @@ def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
 
 def plot(xr, folder_saving, save_file, trend =False, index = None):
 
-    obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Observations/nc_files/altimeter2deg.nc"
-    # obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
+    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Observations/nc_files/altimeter2deg.nc"
+    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_CESM2LE_zos_fr_2015_2100.bin.nc"
     dataset = netCDF4.Dataset(obs_nc)
 
     # for var in dataset.variables.values():
@@ -176,22 +180,21 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
 
     lats =dataset.variables['lat'][:]
     print(lats.shape)
-    # lats = block_reduce(lats, (2,), np.mean)
+    lats = block_reduce(lats, (2,), np.mean)
     print(lats.min(), lats.max(), lats.shape)
     lons = dataset.variables['lon'][:]
-    # lons = block_reduce(lons, (2,), np.mean)
+    lons = block_reduce(lons, (2,), np.mean)
     print(lons.min(), lons.max(), lons.shape)
 
     zos, lons = add_cyclic_point(zos, coord=lons)
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
-    # norm = TwoSlopeNorm(vmin=zos.min(), vcenter=0, vmax=zos.max())
-    v_min=-2 #zos.min()
-    v_max=2 #zos.max()
+    v_min=-1 #zos.min()
+    v_max=1 #zos.max()
     levels = np.linspace(v_min, v_max, 60)
-    # norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
-    plt.contourf(lons,lats, zos, cmap="jet",vmin=v_min, vmax=v_max, levels=levels,
-                 transform=ccrs.PlateCarree(), extend = "both")  #norm=norm,
+    norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
+    plt.contourf(lons,lats, zos, cmap="coolwarm",vmin=v_min, vmax=v_max, levels=levels,
+                 transform=ccrs.PlateCarree(), extend = "both",norm=norm)
     cbar = plt.colorbar()
     cbar.set_ticks(range(v_min, v_max + 1))
 
@@ -260,6 +263,88 @@ def combine_image_patches(y_w_patches):
 
     print(y.shape)
     return y
+
+
+def learn_map_climate_model_to_altimeter(climate_model, observations):
+
+    lons = climate_model.shape[1]
+    lats = climate_model.shape[2]
+
+    ##divide into train/test
+    trainvalid_index = 288
+    clm_trainvalid = climate_model[:trainvalid_index,:,:]
+    clm_test = climate_model[trainvalid_index:,:,:]
+
+    obs_trainvalid = observations[:trainvalid_index,:,:]
+    obs_test = observations[trainvalid_index:,:,:]
+
+    valid_index = 252
+    clm_valid = clm_trainvalid[valid_index:,:,:]
+    clm_train = clm_trainvalid[:valid_index,:,:]
+
+    obs_valid = obs_trainvalid[valid_index:, :, :]
+    obs_train = obs_trainvalid[:valid_index, :, :]
+
+    print(clm_train.shape, obs_test.shape, clm_valid.shape)
+
+
+    lr_mapping = {} #np.full((lons, lats), np.nan)
+    scores = []
+    trans = PolynomialFeatures(degree=1)
+    for lon in range(lons):
+        for lat in range(lats):
+            x_ts = clm_train[:, lon, lat]
+            y_ts = obs_train[:, lon, lat]
+
+            if np.isnan(y_ts).sum() == 0:
+                x_ts = x_ts.reshape(len(x_ts), 1)
+                # x_ts = trans.fit_transform(x_ts)
+                reg = linear_model.LinearRegression().fit(x_ts, y_ts)
+
+                lr_mapping[(lon,lat)] = reg
+
+                x_valid_ts = clm_valid[:, lon, lat]
+                y_valid_ts = obs_valid[:, lon, lat]
+                if np.isnan(y_valid_ts).sum() == 0:
+                    x_valid_ts = x_valid_ts.reshape(len(x_valid_ts), 1)
+                    # x_valid_ts = trans.fit_transform(x_valid_ts)
+                    scores.append(reg.score(x_valid_ts, y_valid_ts))
+
+
+
+    print(len(scores), np.average(scores)) #0.2716
+    print(len(lr_mapping.keys()))
+    pickle.dump(lr_mapping, open('lr_models_mapping.pickle','wb'))
+
+    return lr_mapping
+
+
+def post_process_climate_to_altimeter(climate_model):
+    lons = climate_model.shape[1]
+    lats = climate_model.shape[2]
+    months = climate_model.shape[0]
+
+    final_observations = np.full((months, lons, lats), np.nan)
+    lr_mapping = pickle.load(open('lr_models_mapping.pickle','rb'))
+    print(lr_mapping)
+
+    for lon in range(lons):
+        for lat in range(lats):
+            if (lon,lat) in lr_mapping:
+                x = climate_model[:,lon,lat]
+                x = x.reshape(len(x), 1)
+                final_observations[:,lon,lat] = lr_mapping[(lon,lat)].predict(x)
+
+    print(final_observations.shape)
+    print(np.isnan(final_observations).sum())
+    print(np.nanmin(final_observations), np.nanmax(final_observations)) #-5.663500785827637 4.587055683135986
+
+    return final_observations
+
+
+
+
+
 
 
 

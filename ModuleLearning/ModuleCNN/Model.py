@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
 # from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
+
 from ModuleLearning.ModuleCNN.unet import UNet, UNet_model,SmaAt_UNet_model, UNet_attn_model,Dilated_UNet_model,Dilated_UNet_attn_model, UNet3d_model, Dilated_UNet3d_model
 
 
@@ -166,6 +167,7 @@ class FullyConvNet(nn.Module):
             self.model = UNet_attn_model(dim_channels, last_channel_size)
         if model_type == "DilatedUnet_Attn":
             self.model = Dilated_UNet_attn_model(dim_channels, last_channel_size)
+
 
    # #
     def forward(self, x):

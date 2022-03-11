@@ -28,20 +28,22 @@ def read_nc_files(path):
     for filename in os.listdir(path_nc):
         if filename.endswith(".nc"):
             print(filename)
-            fp = path_nc+filename
-            nc = netCDF4.Dataset(fp)
-            #
-            for var in nc.variables.values():
-                print(var)
+            if "CESM2LE" in filename:
+                print(filename)
+                fp = path_nc+filename
+                nc = netCDF4.Dataset(fp)
+                #
+                for var in nc.variables.values():
+                    print(var)
 
-            zos = np.array(nc.variables['heatfull'][:])  #cesm-SSH
-            print(zos.shape)
-            zos = np.transpose(zos)
-            print(zos.shape, np.min(zos), np.max(zos))
-            # print(zos[:5, :5, :5])
-            np.save(path_npy + filename[:-7] + '.npy', zos)
+                zos = np.array(nc.variables['SSH'][:])  #cesm-SSH
+                print(zos.shape)
+                zos = np.transpose(zos)
+                print(zos.shape, np.min(zos), np.max(zos))
+                # print(zos[:5, :5, :5])
+                np.save(path_npy + filename[:-7] + '.npy', zos)
 
-            os.remove(path_nc + filename)
+                # os.remove(path_nc + filename)
 
 def read_binary_files(path):
     nlat = 180
@@ -106,7 +108,7 @@ def main():
     path_sealevel_folder = path_data_fr + "zos/"
     path_heatcontent_folder = path_data_fr + "heatfull/"
 
-    path_folder =  path_heatcontent_folder #path_sealevel_folder
+    path_folder =path_sealevel_folder
 
     historical_path = path_folder + "1850-2014/"
     future_path = path_folder + "2015-2100/"
@@ -117,10 +119,10 @@ def main():
     # # read_binary_files(historical_path)
     # # read_binary_files(future_path)
 
-    read_nc_files(historical_path)
-    read_nc_files(future_path)
+    # read_nc_files(historical_path)
+    # read_nc_files(future_path)
 
-    # get_weights_perpixel(historical_path)
+    get_weights_perpixel(historical_path)
 
 
 

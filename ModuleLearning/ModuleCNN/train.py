@@ -79,7 +79,8 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
+def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
+
 
     if X_valid is not None:
         X_valid = torch.from_numpy(X_valid)
@@ -123,6 +124,23 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
 
     basic_forecaster.eval()
 
+
+    ##saving the model's results in the altimeter period and 30 yrs in advance
+    # X_train = torch.from_numpy(X_train)
+    # X_train = X_train.permute(0, 3, 1, 2)
+    # X_altimeter = torch.cat((X_train[-17*12:, :,:,:], X_valid[:9*12,:,:,:]),0)
+    # np.save(folder_saving + "/" + "climate_model_1994_2019.npy", X_altimeter[:,-1,:,:])
+    # print(X_altimeter.shape,  X_altimeter[:,-1,:,:].shape)
+    # y_altimeter = np.concatenate((y_train[-17*12:, :,:], y_valid[:9*12,:,:]),axis=0)
+    # print(y_altimeter.shape)
+    # np.save(folder_saving + "/" + "true_climate_model_2024-2049.npy", y_altimeter)
+    # y_altimeter_pred = basic_forecaster.forward(X_altimeter)
+    # y_altimeter_pred = y_altimeter_pred.cpu().detach().numpy()
+    # print(y_altimeter_pred.shape)
+    # print(y_altimeter_pred[0,0,0])
+    # np.save(folder_saving + "/" + "predictions_on_climate_model_2024-2049.npy", y_altimeter_pred)
+
+    ##saving train predictions
     # X_train = torch.from_numpy(X_train)
     # X_train = X_train.permute(0, 3, 1, 2)
     # if model_type == "ConvLSTM":
@@ -151,7 +169,7 @@ def basic_CNN_test(X_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patc
         y_pred_wo_patches = y_pred #eval.combine_image_patches(y_pred)
 
         if y_test is not None:
-            # np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
+            np.save(folder_saving + "/" + "test_predictions.npy", y_pred_wo_patches)
             y_test_wo_patches, test_mask = get_target_mask(y_test_wo_patches)
             test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
