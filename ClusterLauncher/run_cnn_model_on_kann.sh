@@ -8,7 +8,7 @@
 #SBATCH --nodes=1
 #SBATCH --mem=256g
 #SBATCH --time=1-00:00:00
-#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm_1yr_unet_monthly_downscaled_future_data_wrmse.%j.out
+#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm1le_unet_attn_monthly_downscaled_future_data_wrmse.%j.out
 # === 3. Purge and load needed modules ===
 module purge
 module load python/3.6.5
