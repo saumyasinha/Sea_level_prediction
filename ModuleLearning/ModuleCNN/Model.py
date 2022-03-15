@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 # from Sea_level_prediction.ModuleLearning.ModuleCNN.unet import UNet
 
-from ModuleLearning.ModuleCNN.unet import UNet, UNet_model,SmaAt_UNet_model, UNet_attn_model,Dilated_UNet_model,Dilated_UNet_attn_model, UNet3d_model, Dilated_UNet3d_model
+from ModuleLearning.ModuleCNN.unet import UNet, UNet_model,SmaAt_UNet_model, UNet_attn_model,Dilated_UNet_model,Dilated_UNet_attn_model, UNet3d_model, Dilated_UNet3d_model,UNet_model_ft
 
 
 class EarlyStopping:
@@ -77,7 +77,7 @@ def weights_init(m):
 
 
 class FullyConvNet(nn.Module):
-    def __init__(self, model_type, quantile, outputs, dim_channels, dim_h=360, dim_w=180):
+    def __init__(self, model_type, quantile, outputs, dim_channels, pretrained_model = None, dim_h=360, dim_w=180):
         super(FullyConvNet, self).__init__()
         # Input size: [batch, 13, 360, 180]
 
@@ -167,6 +167,8 @@ class FullyConvNet(nn.Module):
             self.model = UNet_attn_model(dim_channels, last_channel_size)
         if model_type == "DilatedUnet_Attn":
             self.model = Dilated_UNet_attn_model(dim_channels, last_channel_size)
+        if model_type == "Unet_ft":
+            self.model = UNet_model_ft(pretrained_model, dim_channels, last_channel_size)
 
 
    # #
@@ -178,14 +180,17 @@ class FullyConvNet(nn.Module):
 
 
 def trainBatchwise(model_type, trainX, trainY, validX,
-                   validY,  weight_map, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
+                   validY,  weight_map, train_mask, valid_mask, n_output_length, n_features, n_timesteps,  epochs, batch_size, lr, folder_saving, model_saved, quantile, alphas, outputs_quantile, valid, fine_tuning=False, pretrained_model_path=None, patience=None, verbose=None, reg_lamdba = 0): #0.0001):
 
+    if pretrained_model_path is not None:
+        pretrained_model = FullyConvNet("Unet", quantile, outputs_quantile, n_timesteps)
+        pretrained_model.load_state_dict(
+            torch.load(pretrained_model_path, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
 
-    basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
+    else:
+        pretrained_model=None
 
-    def count_parameters(model):
-        return sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("num of parameters in this model:",count_parameters(basic_forecaster))
+    basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps, pretrained_model)
 
 
     train_on_gpu = torch.cuda.is_available()
@@ -206,6 +211,13 @@ def trainBatchwise(model_type, trainX, trainY, validX,
 
 
     print(basic_forecaster)
+
+
+
+    def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    print("num of parameters in this model:", count_parameters(basic_forecaster))
 
     optimizer = torch.optim.Adam(basic_forecaster.parameters(), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
     #optimizer = torch.optim.SGD(basic_forecaster.parameters(), lr=lr)

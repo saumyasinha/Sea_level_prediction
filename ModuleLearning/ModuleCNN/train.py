@@ -19,7 +19,7 @@ def get_target_mask(y):
     return y_copy, mask
 
 
-def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type, hidden_dim=15, num_layers=1,kernel_size = (3,3), attention = False, n_predictions =1):
+def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, include_heat, quantile, alphas, model_type,  pretrained_model_path=None, hidden_dim=15, num_layers=1,kernel_size = (3,3), attention = False, n_predictions =1):
 
     valid = True
     outputs_quantile = len(alphas)
@@ -59,7 +59,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
             X_valid = X_valid[:, np.newaxis, :,: , :]
         train_loss, valid_loss = trainconv(model_type, X_train, y_train, X_valid, y_valid,  weight_map, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
-                                                alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, patience=1000)
+                                                alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, pretrained_model_path=pretrained_model_path, patience=1000)
 
     else:
         if include_heat is False:

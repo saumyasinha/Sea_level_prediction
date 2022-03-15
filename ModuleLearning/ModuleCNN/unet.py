@@ -222,6 +222,37 @@ class UNet_model(nn.Module):
 
         return logits
 
+
+class UNet_model_ft(nn.Module):
+    def __init__(self, pretrained_model, dim_channels, last_channel_size=1,input_channel_ft=16,bilinear=True):
+        super(UNet_model_ft, self).__init__()
+        self.n_channels = dim_channels
+        self.n_classes = last_channel_size
+        self.bilinear = bilinear
+        self.input_channel_ft = input_channel_ft
+        self.pretrained_model = pretrained_model
+
+        for param in self.pretrained_model.parameters():
+            param.requires_grad = False
+
+        self.outc = DoubleConv(self.input_channel_ft, self.input_channel_ft)
+        self.final_outc = OutConv(self.input_channel_ft, self.n_classes)
+
+    def forward(self, x):
+        x1 = self.pretrained_model.model.inc(x)
+        x2 = self.pretrained_model.model.down1(x1)
+        x3 = self.pretrained_model.model.down2(x2)
+        x4 = self.pretrained_model.model.down3(x3)
+        x5 = self.pretrained_model.model.down4(x4)
+        x = self.pretrained_model.model.up1(x5, x4)
+        x = self.pretrained_model.model.up2(x, x3)
+        x = self.pretrained_model.model.up3(x, x2)
+        x = self.pretrained_model.model.up4(x, x1)
+        x = self.outc(x)
+        logits = self.final_outc(x)
+
+        return logits
+
 class UNet3d_model(nn.Module):
     def __init__(self, dim_channels,last_channel_size=1,bilinear=True):
         super(UNet3d_model, self).__init__()
