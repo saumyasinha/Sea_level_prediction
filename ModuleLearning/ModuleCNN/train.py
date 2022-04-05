@@ -79,7 +79,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
+def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, pretrained_model_path=None,hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
 
 
     if X_valid is not None:
@@ -104,8 +104,17 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
         if model_type[-2:]=="3d":
             X_valid = X_valid[:,  np.newaxis, :, :, :]
             X_test = X_test[:, np.newaxis, :,: , :]
+        if pretrained_model_path is not None:
+            pretrained_model = FullyConvNet("Unet", quantile, outputs_quantile, n_timesteps)
+            pretrained_model.load_state_dict(
+                torch.load(pretrained_model_path, map_location=torch.device('cpu')))
+                           # ,map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
 
-        basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
+        else:
+            pretrained_model = None
+
+        basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps, pretrained_model)
+        #basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
                                     hidden_dim=hidden_dim,
