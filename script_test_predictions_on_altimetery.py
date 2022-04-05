@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from skimage.measure import block_reduce
 from ModuleLearning import preprocessing, eval
 from ModuleLearning.ModuleCNN import train as train_cnn
-
+import matplotlib.pyplot as plt
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
@@ -133,19 +133,14 @@ def main():
         y_test_pred = np.load(folder_saving+"/altimeter_predictions.npy")
         print(y_test_pred.shape)
         # altimeter_pred_2024_2049 = y_test_pred[:-5, :, :]
-        # altimeter_scaled_pred_2024_2049 = eval.post_process_climate_to_altimeter(altimeter_pred_2024_2049)
-        # np.save("MLpredictions_scaled_on_altimeter_2024-2049.npy", altimeter_scaled_pred_2024_2049)
 
-        # altimeter_scaled_pred_2024_2049 = np.load("MLpredictions_scaled_on_altimeter_2024-2049.npy")
         # np.save("MLpredictions_on_altimeter_2024-2049.npy",altimeter_pred_2024_2049)
         # print(altimeter_pred_2024_2049.shape, type(altimeter_pred_2024_2049[0,0,0]))
 
         y_test_pred = y_test_pred[:-5, :, :]
-        mask =  mask[:-5,:,:]
-        print(mask.shape, mask.sum())
+        mask = mask[:-5,:,:]
+        # print(mask.shape, mask.sum())
         prediction_trend = eval.fit_trend(y_test_pred, mask, yearly=yearly, year_range = range(2024,2050))
-        # prediction_scaled_trend = eval.fit_trend(altimeter_scaled_pred_2024_2049, mask, yearly=yearly, year_range=range(2024, 2050))
-        eval.plot(prediction_trend, folder_saving, "altimeter_prediction_trend", trend=True)
 
         altimeter_data = altimeter_data[:-5, :, :]
         # print(np.nanmin(altimeter_data), np.nanmax(altimeter_data)) #-2.2653828 1.6158351
@@ -153,36 +148,61 @@ def main():
         eval.plot(altimeter_trend, folder_saving, "altimeter_trend", trend=True)
 
         eval.plot(prediction_trend - altimeter_trend, folder_saving, "altimeter_prediction_trend-altimeter_trend", trend=True)
-
-
+        altimeter_pred_rms,_ = eval.evaluation_metrics(None,prediction_trend*1000, mask = ~np.isnan(prediction_trend), weight_map=weight_map, trend=True)
+        altimeter_rms, _ = eval.evaluation_metrics(None, altimeter_trend*1000, mask=~np.isnan(altimeter_trend),
+                                                        weight_map=weight_map, trend=True)
+        diff_ML_pred_altimeter_rms, _ = eval.evaluation_metrics(None, (prediction_trend-altimeter_trend) * 1000, mask=~np.isnan(altimeter_trend),
+                                                   weight_map=weight_map, trend=True)
         #### get trend plots on climate model for comparison ####
-        # climate_model_2024_2049 = np.load(folder_saving+"/true_climate_model_2024-2049.npy")
+        climate_model_2024_2049 = np.load(folder_saving+"/true_climate_model_2024-2049.npy")
         # print(np.isnan(climate_model_2024_2049).sum())
-        # _, climate_mask = train_cnn.get_target_mask(climate_model_2024_2049)
-        # #
-        # climate_model_2024_2049_trend = eval.fit_trend(climate_model_2024_2049, climate_mask, yearly=yearly,
-        #                                                    year_range=range(2024, 2050))
+        _, climate_mask = train_cnn.get_target_mask(climate_model_2024_2049)
+        # # #
+        climate_model_2024_2049_trend = eval.fit_trend(climate_model_2024_2049, climate_mask, yearly=yearly,
+                                                           year_range=range(2024, 2050))
 
-        # climate_model_1994_2019 = np.load(folder_saving+"/climate_model_1994_2019.npy")
-        # eval.learn_map_climate_model_to_altimeter(climate_model_1994_2019,altimeter_data)
+        climate_model_1994_2019 = np.load(folder_saving+"/climate_model_1994_2019.npy")
+        # eval.learn_map_climate_model_to_altimeter(climate_model_1994_2019,altimeter_data, weight_map, folder_saving)
         # print(type(climate_model_1994_2019))
-        # climate_model_persistence_trend = eval.fit_trend(climate_model_1994_2019, climate_mask, yearly=yearly, year_range = range(1994,2020))
-        # eval.plot(climate_model_persistence_trend, folder_saving, "climate_model_persistence_trend", trend=True)
+        climate_model_persistence_trend = eval.fit_trend(climate_model_1994_2019, climate_mask, yearly=yearly, year_range = range(1994,2020))
+        eval.plot(climate_model_persistence_trend, folder_saving, "climate_model_persistence_trend", trend=True)
 
-        # climate_model_MLpredictions = np.load(folder_saving+"/predictions_on_climate_model_2024-2049.npy")
-        # climate_model_MLpredictions_trend = eval.fit_trend(climate_model_MLpredictions, climate_mask, yearly=yearly,
-        #                                                  year_range=range(2024, 2050))
-        # # eval.plot(climate_model_MLpredictions_trend, folder_saving, "climate_model_MLpredictions_trend", trend=True)
+        climate_model_MLpredictions = np.load(folder_saving+"/predictions_on_climate_model_2024-2049.npy")
+        climate_model_MLpredictions_trend = eval.fit_trend(climate_model_MLpredictions, climate_mask, yearly=yearly,
+                                                         year_range=range(2024, 2050))
+
+        ML_pred_on_clm_model_rms, _ = eval.evaluation_metrics(None, climate_model_MLpredictions_trend * 1000, mask=~np.isnan(climate_model_MLpredictions_trend),
+                                                        weight_map=weight_map, trend=True)
+        clm_model_persistence_rms, _ = eval.evaluation_metrics(None, climate_model_persistence_trend * 1000, mask=~np.isnan(climate_model_persistence_trend),
+                                                   weight_map=weight_map, trend=True)
+        diff_ml_pred_clm_model_rms,_ = eval.evaluation_metrics(None, (climate_model_MLpredictions_trend-climate_model_2024_2049_trend)* 1000, mask=~np.isnan(climate_model_MLpredictions_trend),
+                                                   weight_map=weight_map, trend=True)
         #
+        print("rms of altimeter in mm/yr: ", altimeter_rms)
+        print("rms of altimeter predictions in mm/yr: ", altimeter_pred_rms)
+        print("rms of altimeter predictions - altimeter in mm/yr: ", diff_ML_pred_altimeter_rms)
+
+        print("rms of clm persistence in mm/yr: ", clm_model_persistence_rms)
+        print("rms of ml predictions on clm model in mm/yr: ", ML_pred_on_clm_model_rms)
+        print("rms of ml predictions - true clm model in mm/yr: ", diff_ml_pred_clm_model_rms)
+
+
+
+        # climate_model_MLpredictions_scaled_2024_2049 = eval.post_process_climate_to_altimeter(climate_model_MLpredictions, folder_saving)
+        # np.save(folder_saving+"climate_model_MLpredictions_scaled_2024_2049.npy", climate_model_MLpredictions_scaled_2024_2049)
+
+        # climate_model_MLpredictions_scaled_trend = eval.fit_trend(climate_model_MLpredictions_scaled_2024_2049, mask, yearly=yearly,
+        #                                          year_range=range(2024, 2050))
+        # eval.plot(climate_model_MLpredictions_scaled_trend, folder_saving, "climate_model_MLpredictions_scaled_trend", trend=True)
+        #
+        # eval.plot(prediction_trend-climate_model_MLpredictions_scaled_trend, folder_saving, "altimer_prediction_trend-clm_model_postporocessed_trend_2024-2049", trend=True)
+
         # eval.plot(climate_model_MLpredictions_trend-climate_model_2024_2049_trend, folder_saving, "climate_model_MLpredictions_trend-climate_model_2024-2049", trend=True)
 
-        # trend_rmse, trend_mae = eval.evaluation_metrics(climate_model_2024_2049_trend*1000, climate_model_MLpredictions_trend*1000, mask = ~np.isnan(climate_model_2024_2049_trend), weight_map=weight_map, trend=True)
+
         # rmse, mae = eval.evaluation_metrics(climate_model_2024_2049, climate_model_MLpredictions,
         #                                                             mask=climate_mask,
         #                                                             weight_map=weight_map)
-        #
-        # print("climate prediction error (meters): ", rmse) #0.91486 cms
-        # print("climate prediction error in trend (mm/yr): ", trend_rmse) #0.35237
 
         ## Note
         # We are making a prediction from 1994+30yrs (not 1993)
@@ -191,8 +211,13 @@ def main():
 
 
 
-
 if __name__=='__main__':
     main()
 
-
+## A plot to just figure out relation between  altimeter and climate model trend
+# plt.scatter(climate_model_persistence_trend*1000, altimeter_trend*1000)
+# plt.ylim([-10, 20])
+# plt.ylabel("Altimeter trend in mm/yr")
+# plt.xlabel("Climate model trend in mm/yr")
+# plt.title("scatter plot of altimeter and climate model trend for 1994-2019")
+# plt.savefig("comparing_alt_vs_clm_model_trend")

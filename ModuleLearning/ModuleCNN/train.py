@@ -57,6 +57,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
         if model_type[-2:]=="3d":
             X_train = X_train[:,  np.newaxis, :, :, :]
             X_valid = X_valid[:, np.newaxis, :,: , :]
+
         train_loss, valid_loss = trainconv(model_type, X_train, y_train, X_valid, y_valid,  weight_map, train_mask, valid_mask,
                                                 n_predictions, n_features, n_timesteps, epochs, batch_size, learning_rate, folder_saving, model_saved, quantile,
                                                 alphas=np.arange(0.05, 1.0, 0.05), outputs_quantile=outputs_quantile, valid=valid, pretrained_model_path=pretrained_model_path, patience=1000)
@@ -79,7 +80,7 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
     # return train_mask, valid_mask
 
 
-def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
+def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, pretrained_model_path=None, hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
 
 
     if X_valid is not None:
@@ -105,7 +106,18 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
             X_valid = X_valid[:,  np.newaxis, :, :, :]
             X_test = X_test[:, np.newaxis, :,: , :]
 
-        basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
+        if pretrained_model_path is not None:
+            pretrained_model = FullyConvNet("Unet", quantile, outputs_quantile, n_timesteps)
+            pretrained_model.load_state_dict(
+                torch.load(pretrained_model_path, map_location=torch.device('cpu')))
+                           # ,map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+
+        else:
+            pretrained_model = None
+
+        basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps, pretrained_model)
+
+        # basic_forecaster = FullyConvNet(model_type, quantile, outputs_quantile, n_timesteps)
     else:
         basic_forecaster = ConvLSTM(input_dim=n_features,
                                     hidden_dim=hidden_dim,
@@ -175,7 +187,7 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
             test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
         else:
-            np.save(folder_saving + "/" + "altimeter_predictions.npy", y_pred_wo_patches)
+            np.save(folder_saving + "/" + "altimeter_ft_predictions.npy", y_pred_wo_patches)
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
@@ -195,14 +207,14 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
        #
         y_valid_wo_patches = y_valid #eval.combine_image_patches(y_valid)
         y_valid_pred_wo_patches = y_valid_pred #eval.combine_image_patches(y_valid_pred)
-        np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
+        # np.save(folder_saving + "/" + "valid_predictions.npy", y_valid_pred_wo_patches)
         y_valid_wo_patches, valid_mask = get_target_mask(y_valid_wo_patches)
         valid_rmse, valid_mae = eval.evaluation_metrics(y_valid_pred_wo_patches, y_valid_wo_patches, valid_mask, weight_map_wo_patches)
 
         print("valid rmse and mae scores: ", valid_rmse, valid_mae)
-
+    #
     return valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask
-
+    #
 
 def loss_plots(train_loss, valid_loss, folder_saving, loss_type=""):
     epochs = range(1, len(train_loss)+1)

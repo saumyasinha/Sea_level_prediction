@@ -10,6 +10,8 @@ from skimage.measure import block_reduce
 from sklearn import linear_model
 import pickle
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_squared_error
+from sklearn.svm import SVR
 
 
 
@@ -18,7 +20,11 @@ def evaluation_metrics(pred, target, mask, weight_map, trend = False):
 
     if trend == False:
         weight_map = np.repeat(weight_map[None, ...], len(pred), axis=0)
-    diff = (target - pred)
+
+    if pred is None:
+        diff = target
+    else:
+        diff = (target - pred)
 
     weighted_diff2 = (diff ** 2) * weight_map
 
@@ -189,8 +195,8 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     zos, lons = add_cyclic_point(zos, coord=lons)
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
-    v_min=-1 #zos.min()
-    v_max=1 #zos.max()
+    v_min=-2 #zos.min()
+    v_max=3 #zos.max()
     levels = np.linspace(v_min, v_max, 60)
     norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="coolwarm",vmin=v_min, vmax=v_max, levels=levels,
@@ -265,7 +271,7 @@ def combine_image_patches(y_w_patches):
     return y
 
 
-def learn_map_climate_model_to_altimeter(climate_model, observations):
+def learn_map_climate_model_to_altimeter(climate_model, observations, weight_map, folder_saving):
 
     lons = climate_model.shape[1]
     lats = climate_model.shape[2]
@@ -289,43 +295,74 @@ def learn_map_climate_model_to_altimeter(climate_model, observations):
 
 
     lr_mapping = {} #np.full((lons, lats), np.nan)
+    diff_map = np.full((lons, lats), np.nan)
+    scaled_clm_map = np.full((lons, lats), np.nan)
     scores = []
-    trans = PolynomialFeatures(degree=1)
+    weights = []
+    # trans = PolynomialFeatures(degree=1)
     for lon in range(lons):
         for lat in range(lats):
             x_ts = clm_train[:, lon, lat]
             y_ts = obs_train[:, lon, lat]
 
             if np.isnan(y_ts).sum() == 0:
+                # if np.isnan(x_ts).sum()>0:
+                #     print("here")
                 x_ts = x_ts.reshape(len(x_ts), 1)
                 # x_ts = trans.fit_transform(x_ts)
                 reg = linear_model.LinearRegression().fit(x_ts, y_ts)
+                # reg = SVR(kernel='rbf', C=1e3, gamma=0.1).fit(x_ts, y_ts)
+                # reg = SVR(kernel='linear', C=1e3).fit(x_ts, y_ts)
 
                 lr_mapping[(lon,lat)] = reg
 
                 x_valid_ts = clm_valid[:, lon, lat]
                 y_valid_ts = obs_valid[:, lon, lat]
                 if np.isnan(y_valid_ts).sum() == 0:
+                    # if np.isnan(x_valid_ts).sum() > 0:
+                    #     print("here")
                     x_valid_ts = x_valid_ts.reshape(len(x_valid_ts), 1)
+                    pred = reg.predict(x_valid_ts)
                     # x_valid_ts = trans.fit_transform(x_valid_ts)
-                    scores.append(reg.score(x_valid_ts, y_valid_ts))
+                    diff = (y_valid_ts - pred)
+                    scaled_clm_map[lon,lat] = np.mean(pred)
+                    diff_map[lon,lat] = np.mean(diff)
+                    # sq_err = (diff**2)
+                    scores.append(sqrt(mean_squared_error(y_valid_ts,pred)))
+                    # weights.append(weight_map[lon,lat])
 
 
-
-    print(len(scores), np.average(scores)) #0.2716
+    l2loss = np.mean(scores)#sum([a*b for a,b in zip(scores,weights)]) / sum(weights)
+    print("avg rmse over all ocean pixels: ",l2loss) #avg rmse over all ocean pixels:  0.06048
     print(len(lr_mapping.keys()))
-    pickle.dump(lr_mapping, open('lr_models_mapping.pickle','wb'))
+    pickle.dump(lr_mapping, open(folder_saving+'lr_models_mapping.pickle','wb'))
+
+    # plot(diff_map, folder_saving, "diff_between_altimeter_and_scaled_clm_avg_2015-2017", trend=True)
+    obs_valid_avg = np.mean(obs_valid,axis=0)
+    clm_valid_avg = np.mean(clm_valid, axis=0)
+    clm_valid_avg[np.isnan(obs_valid_avg)] = np.nan
+    plot(obs_valid_avg, folder_saving, "altimeter_avg_2015-2017", trend=True)
+    plot(clm_valid_avg, folder_saving, "clm_avg_2015-2017", trend=True)
+    plot(scaled_clm_map, folder_saving, "scaled_clm_avg_2015-2017", trend=True)
+    #
+    # print("max and min of altimeter 2015-2017", np.nanmax(obs_valid_avg), np.nanmin(obs_valid_avg))
+    # print("max and min of clm scaled 2015-2017", np.nanmax(scaled_clm_map), np.nanmin(scaled_clm_map))
+    print("max and min of clm 2015-2017", np.nanmax(clm_valid_avg), np.nanmin(clm_valid_avg))
+    # #linear reg:
+    # max and min of altimeter 2015 - 2017 : 1.1053423 - 2.070901
+    # max and min of clm scaled 2015 - 2017 :1.0534231662750244 - 2.0691747665405273
+    # max and min of clm 2015-2017: 1.0507113 -2.051095
 
     return lr_mapping
 
 
-def post_process_climate_to_altimeter(climate_model):
+def post_process_climate_to_altimeter(climate_model, folder_saving):
     lons = climate_model.shape[1]
     lats = climate_model.shape[2]
     months = climate_model.shape[0]
 
     final_observations = np.full((months, lons, lats), np.nan)
-    lr_mapping = pickle.load(open('lr_models_mapping.pickle','rb'))
+    lr_mapping = pickle.load(open(folder_saving+'lr_models_mapping.pickle','rb'))
     print(lr_mapping)
 
     for lon in range(lons):
@@ -337,9 +374,10 @@ def post_process_climate_to_altimeter(climate_model):
 
     print(final_observations.shape)
     print(np.isnan(final_observations).sum())
-    print(np.nanmin(final_observations), np.nanmax(final_observations)) #-5.663500785827637 4.587055683135986
+    print(np.nanmin(final_observations), np.nanmax(final_observations))
 
     return final_observations
+
 
 
 

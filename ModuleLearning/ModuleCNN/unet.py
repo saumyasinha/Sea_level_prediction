@@ -210,18 +210,27 @@ class UNet_model(nn.Module):
 
     def forward(self, x):
         x1 = self.inc(x)
+        # print(x1.shape)
         x2 = self.down1(x1)
+        # print(x2.shape)
         x3 = self.down2(x2)
+        # print(x3.shape)
         x4 = self.down3(x3)
+        # print(x4.shape)
         x5 = self.down4(x4)
+        # print(x5.shape)
         x = self.up1(x5, x4)
+        # print(x.shape)
         x = self.up2(x, x3)
+        # print(x.shape)
         x = self.up3(x, x2)
+        # print(x.shape)
         x = self.up4(x, x1)
+        # print(x.shape)
         logits = self.outc(x)
+        # print(logits.shape)
 
         return logits
-
 
 class UNet_model_ft(nn.Module):
     def __init__(self, pretrained_model, dim_channels, last_channel_size=1,input_channel_ft=16,bilinear=True):
@@ -234,8 +243,18 @@ class UNet_model_ft(nn.Module):
 
         for param in self.pretrained_model.parameters():
             param.requires_grad = False
-
-        self.outc = DoubleConv(self.input_channel_ft, self.input_channel_ft)
+        for param in self.pretrained_model.model.up4.parameters():
+            param.requires_grad=True
+        for param in self.pretrained_model.model.up3.parameters():
+            param.requires_grad=True
+        #for param in self.pretrained_model.model.up2.parameters():
+         #   param.requires_grad=True
+        #for param in self.pretrained_model.model.up1.parameters():
+         #   param.requires_grad=True
+        #for param in self.pretrained_model.model.outc.parameters():
+          #  param.requires_grad=True
+        self.outc1 = DoubleConv(self.input_channel_ft, self.input_channel_ft)
+        self.outc2 = DoubleConv(self.input_channel_ft, self.input_channel_ft)
         self.final_outc = OutConv(self.input_channel_ft, self.n_classes)
 
     def forward(self, x):
@@ -248,9 +267,10 @@ class UNet_model_ft(nn.Module):
         x = self.pretrained_model.model.up2(x, x3)
         x = self.pretrained_model.model.up3(x, x2)
         x = self.pretrained_model.model.up4(x, x1)
-        x = self.outc(x)
+        x = self.outc1(x)
+        x = self.outc2(x)
         logits = self.final_outc(x)
-
+        #logits = self.pretrained_model.model.outc(x)
         return logits
 
 class UNet3d_model(nn.Module):
