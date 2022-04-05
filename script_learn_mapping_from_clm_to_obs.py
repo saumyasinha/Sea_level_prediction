@@ -205,12 +205,50 @@ def main():
 
 
         model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-        # train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, pretrained_model_path=path_models+ model + "/" + reg + "/"+pretrained_model_path+"/"+model_saved, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
-        # valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, y_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, pretrained_model_path=path_models+ model + "/" + reg + "/"+pretrained_model_path+"/"+model_saved, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
-        # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-        # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
-        # f.close()
+
+        train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, pretrained_model_path=path_models+ model + "/" + reg + "/"+pretrained_model_path+"/"+model_saved, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_input, y_train_input, X_valid_input, y_valid_input, X_test_input, y_test_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, pretrained_model_path=path_models+ model + "/" + reg + "/"+pretrained_model_path+"/"+model_saved, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
+        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+        f.close()
         #
+        #
+        # #####Visualizations####################
+        # #### get trend plots######
+        # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
+        #
+        # # # # # # # print(y_valid_pred.shape)
+        # # # # # #
+        # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
+        # # # # #
+        # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        # # # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070", trend=True)
+        # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        # # # eval.plot(model_trend, folder_saving, "model_trend_2041-2070", trend=True)
+        # # diff = model_trend - valid_trend
+        # # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070", trend=True)
+        # # # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+        # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map, trend=True)
+        # # #
+        # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
+        # # # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174 -0.42412783552226774
+
+        ### plot true vs predicitons on best/worst rmse pts
+        # mean_for_valid_period = np.mean(y_valid, axis=0)
+        # y_valid_mean_removed = y_valid - mean_for_valid_period[np.newaxis, :, :]
+        # mean_pred_for_valid_pred = np.mean(y_valid_pred, axis=0)
+        # y_valid_pred_mean_removed = y_valid_pred - mean_pred_for_valid_pred[np.newaxis, :, :]
+        # #
+        # # # y_valid_mean = np.mean(y_valid, axis=0)
+        # # # # print(np.isnan(y_valid_mean).sum())
+        # # # # y_valid_pred_mean = np.mean(y_valid_pred, axis=0)
+        # # # # weighted_diff2 = ((y_valid_mean - y_valid_pred_mean)**2) * weight_map
+        # weighted_diff2 = (diff**2)*weight_map
+        # weighted_diff2 = np.ma.masked_where(np.isnan(weighted_diff2), weighted_diff2)
+        #
+        # sorted_points_wrt_error = np.dstack(np.unravel_index(weighted_diff2.argsort(axis=None), weighted_diff2.shape))
+        # print(sorted_points_wrt_error, sorted_points_wrt_error.shape)
+
 
         X_altimeter = np.load(
             path_models + model + "/" + reg + "/" + pretrained_model_path + "/climate_model_with_prev_steps_1994_2019.npy")

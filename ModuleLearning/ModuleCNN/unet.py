@@ -247,13 +247,16 @@ class UNet_model_ft(nn.Module):
             param.requires_grad=True
         for param in self.pretrained_model.model.up3.parameters():
             param.requires_grad=True
+
         #for param in self.pretrained_model.model.up2.parameters():
          #   param.requires_grad=True
         #for param in self.pretrained_model.model.up1.parameters():
          #   param.requires_grad=True
         #for param in self.pretrained_model.model.outc.parameters():
           #  param.requires_grad=True
-        self.outc1 = DoubleConv(self.input_channel_ft, self.input_channel_ft)
+
+        self.outc1 = DoubleConv(self.input_channel_ft, self.input_channel_ft) 
+
         self.outc2 = DoubleConv(self.input_channel_ft, self.input_channel_ft)
         self.final_outc = OutConv(self.input_channel_ft, self.n_classes)
 
