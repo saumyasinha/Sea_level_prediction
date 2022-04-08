@@ -37,7 +37,7 @@ test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
-model_type = "Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "Unet_Attn" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -50,7 +50,7 @@ reg = "CNN/Unet/"# Unet"
 
 # sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"#"
 # sub_reg = "cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "_combined_cesm1and2_cnn_with_1yrlag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "_combined_cesm1and2_cnn_1yrlag_large_batchnorm_unet_with_Attn_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 hidden_dim = 12 #40 #24

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === 2. List of SBATCH arguements ===
-#SBATCH --job-name=cesm_smatunet_1yrlag_monthly_downscaled_future_data_and_Weights
+#SBATCH --job-name=cesm1and2_1yrlag_monthly_downscaled_future_data_and_Weights
 #SBATCH --nodelist=bgpu-mktg1
 #SBATCH --account=blanca-kann
 #SBATCH --gres=gpu
@@ -9,7 +9,7 @@
 #SBATCH --nodes=1
 ##SBATCH --mem-per-cpu=8g
 #SBATCH --ntasks=50
-#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm2le_unet_attn_1yr_lag_downscaled_future_data_and_weights.%j.out
+#SBATCH --output=/pl/active/machinelearning/Saumya/ML_for_sea_level/job_outputs/cesm1and2_unet_1yr_lag_downscaled_future_data_and_weights.%j.out
 
 
 # === 3. Purge and load needed modules ===
