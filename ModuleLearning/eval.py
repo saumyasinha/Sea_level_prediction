@@ -64,21 +64,21 @@ def fit_trend(pred, mask, yearly = False, year_range=range(2041,2071)):
     if yearly:
         n_years = pred.shape[0]
 
-    print(n_years, len(x))
+    # print(n_years, len(x))
 
     y = pred
     if yearly==False:
         y = []
         i=0
         for yr in range(0,n_years):
-            print(i)
+            # print(i)
             annual_pred = np.mean(pred[i:i+12,:,:], axis=0)
-            print(annual_pred.shape)
+            # print(annual_pred.shape)
             y.append(annual_pred)
             i=i+12
 
         y = np.stack(y)
-    print(y.shape)
+    # print(y.shape)
 
     # plot_global_mean_sea_level(x, y)
     # done = False

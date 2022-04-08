@@ -10,7 +10,7 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
@@ -86,6 +86,7 @@ def main():
     y_train_combined = []
     y_valid_combined = []
     y_test_combined = []
+    y_persistence_combined = []
 
     ## these weights are cosine of latitude, important for using weighted RMSE as a loss function
     weight_map = np.load(historical_path + "weights_historical_CESM1LE_zos_fr_1850_2014.npy")
@@ -195,6 +196,7 @@ def main():
             # weight_map_train_input = preprocessing.get_image_patches(None,weight_map_train)
             # weight_map_valid_input = preprocessing.get_image_patches(None, weight_map_valid)
 
+        y_persistence_combined.append(y_train_input[-30*12:,:,:])
         X_train_combined.append(X_train_input)
         X_valid_combined.append(X_valid_input)
         X_test_combined.append(X_test_input)
@@ -215,11 +217,11 @@ def main():
     print("combined test input shapes: ", X_test_combined_input.shape, y_test_combined_input.shape)
 
     model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-    train_cnn.basic_CNN_train(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
-    valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, X_test_combined_input, y_test_combined_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
-    f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-    f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
-    f.close()
+    # train_cnn.basic_CNN_train(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
+    # valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, X_test_combined_input, y_test_combined_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
+    # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+    # f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+    # f.close()
 
     #
     #
@@ -231,115 +233,64 @@ def main():
 
     # #####Visualizations####################
     # #### get trend plots######
-    # y_valid_pred = np.load(folder_saving+"/valid_predictions.npy")
-    # #
-    # # # # # # # # print(y_valid_pred.shape)
-    # # # # # # #
-    # y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
-    # # # # # # #
-    # valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
-    # eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070", trend=True)
-    # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-    # eval.plot(model_trend, folder_saving, "model_trend_2041-2070", trend=True)
-    # diff = model_trend - valid_trend
-    # eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070", trend=True)
-    # # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
-    # rmse_trend, mae_trend = eval.evaluation_metrics(model_trend*1000, valid_trend*1000, mask = ~np.isnan(valid_trend), weight_map=weight_map, trend=True)
-    # #
-    # print("rmse and log rmse of the trend plots on validation is: ", rmse_trend, np.log(rmse_trend))
-    # # # #For unet downscaled: rmse and log rmse of the trend plots on validation is:  0.654340228637174
+    y_valid_combined_pred = np.load(folder_saving+"/valid_predictions.npy")
+    print(y_valid_combined_pred.shape)
+    idx_start = 0
+    idx_end = 360
 
-    ### plot true vs predicitons on best/worst rmse pts
-    # mean_for_valid_period = np.mean(y_valid, axis=0)
-    # y_valid_mean_removed = y_valid - mean_for_valid_period[np.newaxis, :, :]
-    # mean_pred_for_valid_pred = np.mean(y_valid_pred, axis=0)
-    # y_valid_pred_mean_removed = y_valid_pred - mean_pred_for_valid_pred[np.newaxis, :, :]
-    # #
-    # # # y_valid_mean = np.mean(y_valid, axis=0)
-    # # # # print(np.isnan(y_valid_mean).sum())
-    # # # # y_valid_pred_mean = np.mean(y_valid_pred, axis=0)
-    # # # # weighted_diff2 = ((y_valid_mean - y_valid_pred_mean)**2) * weight_map
-    # weighted_diff2 = (diff**2)*weight_map
-    # weighted_diff2 = np.ma.masked_where(np.isnan(weighted_diff2), weighted_diff2)
-    #
-    # sorted_points_wrt_error = np.dstack(np.unravel_index(weighted_diff2.argsort(axis=None), weighted_diff2.shape))
-    # print(sorted_points_wrt_error, sorted_points_wrt_error.shape)
-    #
-    # # print(np.unravel_index(np.nanargmin(weighted_diff2), weighted_diff2.shape), np.unravel_index(np.nanargmax(weighted_diff2),weighted_diff2.shape))
-    # best_counter = 0
-    # worst_counter = -1
-    # count=0
-    # lats = np.load(historical_path+"/latitudes.npy")
-    # lats = block_reduce(lats, (2,), np.mean)
-    # lons = np.load(historical_path + "/longitudes.npy")
-    # lons = block_reduce(lons, (2,), np.mean)
-    #
-    # while count<10:
-    #     if count<5:
-    #         pt = sorted_points_wrt_error[0,best_counter,:]
-    #         best_counter = best_counter + 1
-    #         if ~np.isnan(np.sum(y_valid_mean_removed[:,pt[0],pt[1]])):
-    #             print(pt)
-    #             print(lons[pt[0]],lats[pt[1]])
-    #             eval.single_point_test(pt[0], pt[1], y_valid_pred_mean_removed, y_valid_mean_removed, years = list(range(2041,2071)), count=count, folder_saving=folder_saving)
-    #             count=count+1
-    #
-    #
-    #     else:
-    #         pt = sorted_points_wrt_error[0,worst_counter,:]
-    #         worst_counter = worst_counter-1
-    #         if ~np.isnan(np.sum(y_valid_mean_removed[:,pt[0],pt[1]])):
-    #             print(pt)
-    #             print(lons[pt[0]], lats[pt[1]])
-    #             eval.single_point_test(pt[0], pt[1], y_valid_pred_mean_removed, y_valid_mean_removed, years = list(range(2041,2071)), count=count, folder_saving=folder_saving)
-    #             count=count+1
+    for i,model in enumerate(models):
+        print(idx_start,idx_end)
+        y_valid_pred = y_valid_combined_pred[idx_start:idx_end,:,:]
+        y_valid = y_valid_combined_input[idx_start:idx_end,:,:]
+        y_valid_wo_patches, valid_mask = train_cnn.get_target_mask(y_valid)
 
-    # # ## plot persistence
-    # y_persistence = y_train[-30*12:,:,:]
-    # # y_persistence = y_valid
-    # persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly, year_range=range(2041,2071))
-    # eval.plot(persistence_trend, folder_saving, "persistence_trend_2041_2070", trend=True)
-    # # model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
-    # eval.plot(model_trend - persistence_trend, folder_saving, "diff_model_and_persis_trend_2041-2070", trend=True)
-    #
-    # model_trend_rms, _ = eval.evaluation_metrics(None,
-    #                                             model_trend * 1000,
-    #                                             mask=~np.isnan(model_trend),
-    #                                             weight_map=weight_map, trend=True)
-    valid_trend_rms, _ = eval.evaluation_metrics(None,
-                                                valid_trend * 1000,
-                                                mask=~np.isnan(valid_trend),
-                                                weight_map=weight_map, trend=True)
-    # diff_clm_model_ml_pred_rms, _ = eval.evaluation_metrics(None,
-    #                                                         (model_trend-valid_trend) * 1000,
-    #                                                         mask=~np.isnan(model_trend),
-    #                                                         weight_map=weight_map, trend=True)
-    #
-    # persistence_trend_rms, _ = eval.evaluation_metrics(None, persistence_trend*1000, mask = ~np.isnan(persistence_trend), weight_map=weight_map, trend=True)
-    # diff_clm_model_persistence_trend_rms, _ = eval.evaluation_metrics(None, ((model_trend-persistence_trend)) * 1000,
-    #                                                    mask=~np.isnan(model_trend), weight_map=weight_map,
-    #                                                    trend=True)
-    # print("rms of persistence in mm/yr: ", persistence_trend_rms)
-    # print("rms of diff between clm model and persistence in mm/yr: ", diff_clm_model_persistence_trend_rms)
-    #
-    print("rms of ml prediction in mm/yr: ", valid_trend_rms)
-    # print("rms of diff between clm model and ml prediction in mm/yr: ", diff_clm_model_ml_pred_rms)
-    #
-    # print("rms of clm model in mm/yr: ", model_trend_rms)
+        valid_trend = eval.fit_trend(y_valid_pred, valid_mask, yearly=yearly)
+        eval.plot(valid_trend, folder_saving, "valid_trend_2041-2070_"+str(model), trend=True)
+        model_trend = eval.fit_trend(y_valid, valid_mask, yearly=yearly)
+        eval.plot(model_trend, folder_saving, "model_trend_2041-2070_"+str(model), trend=True)
+        diff = model_trend - valid_trend
+        eval.plot(diff, folder_saving, "diff_wihtout_dots_trend_2041-2070_"+str(model), trend=True)
 
-    # persistence_rmse, persistence_mae = eval.evaluation_metrics(y_valid, y_persistence,
-    #                                                             mask=valid_mask,
-    #                                                             weight_map=weight_map)
-    # #
-    # print("persistence trend rmse, mae: ",persistence_trend_rmse, persistence_trend_mae)
-    # print("persistence rmse, mae: ", persistence_rmse, persistence_mae)
-    ##CESM1
-    # # persistence trend rmse, mae: 0.6830641514406547 , 0.47213281289195413
-    #persistence model (and not trend) rmse, mae:  0.0363006390941568 0.026479292738289497
+        model_trend_rms, _ = eval.evaluation_metrics(None,
+                                                    model_trend * 1000,
+                                                    mask=~np.isnan(model_trend),
+                                                    weight_map=weight_map, trend=True)
+        valid_trend_rms, _ = eval.evaluation_metrics(None,
+                                                     valid_trend * 1000,
+                                                     mask=~np.isnan(valid_trend),
+                                                     weight_map=weight_map, trend=True)
+        diff_clm_model_ml_pred_rms, _ = eval.evaluation_metrics(None,
+                                                                (model_trend-valid_trend) * 1000,
+                                                                mask=~np.isnan(model_trend),
+                                                                weight_map=weight_map, trend=True)
 
-    #CESM2
-    #persistence trend rmse, mae: 0.8662735556331015, 0.5780070014012614
-    #persistence rmse, mae: 0.03499496614189289, 0.023774955213226475
+        print("rms of ml prediction in mm/yr: ", valid_trend_rms)
+        print("rms of diff between clm model and ml prediction in mm/yr: ", diff_clm_model_ml_pred_rms)
+        print("rms of clm model in mm/yr: ", model_trend_rms)
+        #
+
+        y_persistence = y_persistence_combined[i]
+        persistence_trend = eval.fit_trend(y_persistence, valid_mask, yearly=yearly)
+        eval.plot(persistence_trend, folder_saving, "persistence_trend_"+str(model), trend=True)
+        eval.plot(model_trend - persistence_trend, folder_saving, "diff_model_and_persis_trend_"+str(model), trend=True)
+
+
+
+        persistence_trend_rms, _ = eval.evaluation_metrics(None, persistence_trend*1000, mask = ~np.isnan(persistence_trend), weight_map=weight_map, trend=True)
+        diff_clm_model_persistence_trend_rms, _ = eval.evaluation_metrics(None, ((model_trend-persistence_trend)) * 1000,
+                                                           mask=~np.isnan(model_trend), weight_map=weight_map,
+                                                           trend=True)
+        print("rms of persistence in mm/yr: ", persistence_trend_rms)
+        print("rms of diff between clm model and persistence in mm/yr: ", diff_clm_model_persistence_trend_rms)
+
+
+        idx_start=360
+        idx_end = len(y_valid_combined_pred)
+
+        ## signal to noise plot
+        # # eval.plot(model_trend/np.abs(diff), folder_saving, "signal_to_noise_trend_2041-2070_same_y_axis", trend=True)
+
+
 
 
 if __name__=='__main__':

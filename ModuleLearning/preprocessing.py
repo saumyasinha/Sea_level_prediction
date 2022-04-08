@@ -1,4 +1,5 @@
 import numpy as np
+import ModuleLearning.eval as eval
 from skimage.measure import block_reduce
 
 def remove_land_values(xr):
@@ -11,7 +12,7 @@ def remove_land_values(xr):
     return xr
 
 
-def include_prev_timesteps(X, n_timesteps, include_heat):
+def include_prev_timesteps(X, n_timesteps, include_heat=False):
 
 
     X = np.expand_dims(X, axis=2)
@@ -56,6 +57,7 @@ def create_labels(train, test, lead_years, n_prev_months):
 
     print("X_train, y_train shapes", X_train.shape, y_train.shape)
     print("X_test, y_test shapes", X_test.shape, y_test.shape)
+
 
     return  X_train, y_train, X_test, y_test
 
@@ -111,6 +113,57 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
 
     print(np.nanmin(train), np.nanmax(train), np.nanmin(test), np.nanmax(test), np.isnan(train).sum(), np.isnan(test).sum())
     return train, test
+
+def create_train_test_and_labels_on_trends(train, test, n_prev_months,folder_saving,  lead_years=30, trend_over_years=30):
+
+    print("inside trends function")
+    # trend_over_months = trend_over_years*12
+    # n_months_train = train.shape[2]
+    # n_months_test = test.shape[2]
+    # full_array = np.concatenate([train, test[:, :, n_prev_months:]], axis=2)
+    # print(full_array.shape, n_months_train, n_months_test)
+    #
+    # # full_array = full_array
+    # full_trend_array = []
+    # for month_idx in range(full_array.shape[2]-trend_over_months+1):
+    #     data_to_trend_on = full_array[:,:,month_idx:month_idx+trend_over_months]
+    #     data_to_trend_on = np.transpose(data_to_trend_on, (2, 0, 1))
+    #     print(data_to_trend_on.shape)
+    #     mask = ~np.isnan(data_to_trend_on)
+    #     trended_map = eval.fit_trend(data_to_trend_on, mask, yearly=False)
+    #     print(trended_map.shape,mask.shape)
+    #     full_trend_array.append(trended_map[:,:,np.newaxis])
+    #
+    # full_trend_array = np.concatenate(full_trend_array, axis=2)
+    # print(full_trend_array.shape)
+    # np.save("full_trended_array.npy",full_trend_array)
+    # print(np.nanmin(full_trend_array), np.nanmax(full_trend_array), np.isnan(full_trend_array).sum())
+    full_trend_array = np.load(folder_saving+"/full_trended_array.npy")
+    ## we remove the last point, to keep the data from Jan 1929 to Dec 2070
+    full_trend_array = full_trend_array[:,:,:-1]
+
+    print("full trend array shape", full_trend_array.shape)
+
+    ## keeping the last 10 years as test, train: 102 yrs and test is 10 yrs from trend full data of 112 years of labelled points
+    n_months_train = 102*12
+    n_months_test = 10*12
+    X_train = full_trend_array[:, :, :n_months_train]
+    y_train = full_trend_array[:, :, lead_years * 12:n_months_train + (lead_years * 12)]
+
+    X_test = full_trend_array[:, :, n_months_train-12:n_months_train + n_months_test] ## doing -12 here to include one year before in the test data
+    y_test = full_trend_array[:, :, n_months_train-12+lead_years * 12:n_months_train + n_months_test+lead_years * 12]
+
+    print("X_train, y_train shapes", X_train.shape, y_train.shape)
+    print("X_test, y_test shapes", X_test.shape, y_test.shape)
+
+    print(np.nanmin(X_train), np.nanmax(X_train), np.nanmin(X_test), np.nanmax(X_test), np.isnan(X_train).sum(),
+          np.isnan(X_test).sum())
+
+    print(np.nanmin(y_train), np.nanmax(y_train), np.nanmin(y_test), np.nanmax(y_test), np.isnan(y_train).sum(),
+          np.isnan(y_test).sum())
+
+    return X_train, y_train, X_test, y_test
+
 
 def convert_month_to_years(X):
     n_months = X.shape[2]

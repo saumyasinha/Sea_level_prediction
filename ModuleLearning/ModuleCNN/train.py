@@ -27,8 +27,8 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
     y_train, train_mask = get_target_mask(y_train)
     y_valid, valid_mask = get_target_mask(y_valid)
 
-    X_train, y_train, train_mask, weight_map = torch.from_numpy(X_train), torch.from_numpy(y_train), torch.from_numpy(train_mask), torch.from_numpy(weight_map)
-    X_valid, y_valid, valid_mask = torch.from_numpy(X_valid), torch.from_numpy(y_valid), torch.from_numpy(valid_mask)
+    X_train, y_train, train_mask, weight_map = torch.from_numpy(X_train.astype(np.float32)), torch.from_numpy(y_train.astype(np.float32)), torch.from_numpy(train_mask), torch.from_numpy(weight_map)
+    X_valid, y_valid, valid_mask = torch.from_numpy(X_valid.astype(np.float32)), torch.from_numpy(y_valid.astype(np.float32)), torch.from_numpy(valid_mask)
 
     if include_heat is False:
         print(X_train.shape)
@@ -83,14 +83,14 @@ def basic_CNN_train(X_train, y_train, X_valid, y_valid, weight_map, n_features, 
 def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_map_wo_patches, n_features, n_timesteps,folder_saving, model_saved, quantile, alphas,model_type, pretrained_model_path=None,hidden_dim=15, num_layers=1, kernel_size=(3,3),attention = False, n_predictions = 1):
 
     if X_valid is not None:
-        X_valid = torch.from_numpy(X_valid)
+        X_valid = torch.from_numpy(X_valid.astype(np.float32))
         X_valid = X_valid.permute(0, 3, 1, 2)
         # y_valid, valid_mask = get_target_mask(y_valid)
         if model_type == "ConvLSTM":
             X_valid = X_valid[:, :, np.newaxis, :, :]
 
     if X_test is not None:
-        X_test = torch.from_numpy(X_test)
+        X_test = torch.from_numpy(X_test.astype(np.float32))
         X_test = X_test.permute(0, 3, 1, 2)
         if model_type == "ConvLSTM":
             X_test = X_test[:, :, np.newaxis, :, :]
@@ -136,7 +136,7 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
 
 
     ##saving the model's results in the altimeter period and 30 yrs in advance
-    # X_train = torch.from_numpy(X_train)
+    # X_train = torch.from_numpy(X_train.astype(np.float32))
     # X_train = X_train.permute(0, 3, 1, 2)
     # X_altimeter = torch.cat((X_train[-17*12:, :,:,:], X_valid[:9*12,:,:,:]),0)
     # np.save(folder_saving + "/" + "climate_model_1994_2019.npy", X_altimeter[:,-1,:,:])
@@ -184,7 +184,7 @@ def basic_CNN_test(X_train, y_train, X_valid, y_valid, X_test, y_test, weight_ma
             test_rmse, test_mae = eval.evaluation_metrics(y_pred_wo_patches, y_test_wo_patches, test_mask, weight_map_wo_patches)
 
         else:
-            np.save(folder_saving + "/" + "altimeter_ft_predictions.npy", y_pred_wo_patches)
+            np.save(folder_saving + "/" + "altimeter_predictions.npy", y_pred_wo_patches)
         # print("test rmse and mae scores: ", test_rmse, test_mae)
 
 
