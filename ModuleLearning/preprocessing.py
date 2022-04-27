@@ -19,7 +19,7 @@ def include_prev_timesteps(X, n_timesteps, include_heat=False):
 
     X_with_prev_timesteps = []
     n_months = X.shape[3]
-    for i in range(n_timesteps,n_months):
+    for i in range(12,n_months):
         prev_list =[]
         for j in range(n_timesteps,0,-1):
             prev = X[:, :, :, i - j]

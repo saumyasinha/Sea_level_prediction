@@ -324,11 +324,11 @@ class UpDilated(nn.Module):
 class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout=False):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
+            DoubleConv(in_channels, out_channels, dropout=dropout)
         )
 
     def forward(self, x):
@@ -366,7 +366,7 @@ class Up(nn.Module):
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, out_channels, mid_channels=None):
+    def __init__(self, in_channels, out_channels, mid_channels=None, dropout=False):
         super().__init__()
         if not mid_channels:
             mid_channels = out_channels
@@ -378,9 +378,15 @@ class DoubleConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
+        self.dropout = dropout
+        if self.dropout:
+            self.dropout_layer = nn.Dropout(0.3)
 
     def forward(self, x):
-        return self.double_conv(x)
+        if self.dropout:
+            return self.dropout_layer(self.double_conv(x))
+        else:
+            return self.double_conv(x)
 
 
 class OutConv(nn.Module):

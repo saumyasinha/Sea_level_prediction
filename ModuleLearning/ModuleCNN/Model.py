@@ -219,7 +219,7 @@ def trainBatchwise(model_type, trainX, trainY, validX,
 
     print("num of parameters in this model:", count_parameters(basic_forecaster))
 
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, basic_forecaster.parameters()), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-5)
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, basic_forecaster.parameters()), lr=lr,betas=(0.9, 0.999), eps=1e-08, weight_decay = 1e-7)
     #optimizer = torch.optim.SGD(basic_forecaster.parameters(), lr=lr)
     # samples = trainX.size()[0]
     #steps = int(samples/batch_size)

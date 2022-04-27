@@ -41,7 +41,7 @@ test_end_year = 2070 #2020 #
 ## last test point.
 
 lead_years = 30
-model_type = "Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "DilatedUnet"#"Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -49,16 +49,16 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 
 ## folders to finally save the model
-reg = "CNN/Unet/"# Unet"
+reg = "CNN/trend_Unet/"# Unet"
 
 
 # sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"#"
-# sub_reg = "cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "_combined_cesm1and2_trend_cnn_with_1yrlag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+#sub_reg = "_trend_cnn_with_6months_lag_2layers_conv_convlstm_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "_trend_cnn_with_0lag_batchnorm_dilatedunet_rerun2_weight_decay1e-7_downscaled_weighted_changed_years_not_normalized"
 
 ## Hyperparameters
 hidden_dim = 12 #40 #24
-num_layers=1 #1
+num_layers=2 #1
 
 kernel_size = (3,3)
 
@@ -68,7 +68,7 @@ lr = 1e-4
 
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12 ##seq-length of the deep sequence models
+n_prev_months = 0 #12 ##seq-length of the deep sequence models
 
 downscaling = True #converting 360*180 to 180*90
 include_heat = False
@@ -91,7 +91,11 @@ def main():
         weight_map = block_reduce(weight_map, (2, 2), np.mean)  # (2,2)
     print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
-    folder_saving = path_models + "/combined/" + reg + "/" + sub_reg + "/"
+    #folder_saving = path_models + "/combined/" + reg + "/" + sub_reg + "/"
+    if len(models)>1:
+        folder_saving = path_models + "combined_CESM1and2/" + reg + "/" + sub_reg + "/"
+    else:
+        folder_saving = path_models + models[0] + "/" + reg + "/" + sub_reg + "/"
     os.makedirs(
         folder_saving, exist_ok=True)
 
@@ -100,7 +104,7 @@ def main():
     for model in models:
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling)
-        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_trends(train, test, n_prev_months, path_models + "/combined/")
+        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_trends(train, test, n_prev_months, path_models + model+"/")
         ## the values are in cms
     #
         ## splitting train into train+valid
@@ -116,8 +120,8 @@ def main():
         X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
         X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times)
 
-        y_train = y_train[:,:,n_prev_times:]
-        y_test = y_test[:,:,n_prev_times:]
+        y_train = y_train[:,:,12:]
+        y_test = y_test[:,:,12:]
 
         y_train = np.transpose(y_train, (2,0,1)) #y_train.reshape(-1,lon,lat)
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)
