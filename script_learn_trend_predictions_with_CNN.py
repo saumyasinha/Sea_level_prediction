@@ -17,7 +17,7 @@ path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
 ## which climate model to work on
-models = ['CESM1LE','CESM2LE'] #['CESM1LE'] # ['MIROC-ES2L'] #['MPI-ESM1-2-HR']
+models = ['CESM1LE'] #,'CESM2LE']
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -49,12 +49,14 @@ alphas = np.arange(0.05, 1.0, 0.05)
 q50 = 9
 
 ## folders to finally save the model
-reg = "CNN/Unet/"# Unet"
+reg = "CNN/averaged_Unet/"# Unet"
 
 
 # sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"#"
-# sub_reg = "cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "_combined_cesm1and2_trend_cnn_with_1yrlag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+# sub_reg = "_trend_rerun_cnn_with_0lag_batchnorm_small_unet_weight_decay1e-4_downscaled_weighted_changed_years_not_normalized"
+# sub_reg = "_combined_cesm1and2_trend_cnn_with_1yrlag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
+# sub_reg = "_trend_cnn_with_0lag_batchnorm_unetdilated_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "trial"
 
 ## Hyperparameters
 hidden_dim = 12 #40 #24
@@ -63,12 +65,12 @@ num_layers=1 #1
 kernel_size = (3,3)
 
 batch_size = 6
-epochs = 200#200
+epochs = 1#200
 lr = 1e-4
 
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 12 ##seq-length of the deep sequence models
+n_prev_months = 0 ##seq-length of the deep sequence models
 
 downscaling = True #converting 360*180 to 180*90
 include_heat = False
@@ -76,7 +78,9 @@ attention = False
 
 
 def main():
-
+    
+    # valid_prediction_list_over_multiple_runs = []
+    # test_prediction_list_over_multiple_runs = []
     X_train_combined = []
     X_valid_combined = []
     X_test_combined = []
@@ -91,7 +95,11 @@ def main():
         weight_map = block_reduce(weight_map, (2, 2), np.mean)  # (2,2)
     print(weight_map.shape, np.max(weight_map), np.min(weight_map))
 
-    folder_saving = path_models + "/combined/" + reg + "/" + sub_reg + "/"
+    if len(models)>1:
+        folder_saving = path_models + "combined_CESM1and2/" + reg + "/" + sub_reg + "/"
+    else:
+        folder_saving = path_models + models[0] + "/" + reg + "/" + sub_reg + "/"
+        # folder_saving = path_models + "CESM1LE" + "/" + reg + "/" + sub_reg + "/"
     os.makedirs(
         folder_saving, exist_ok=True)
 
@@ -99,11 +107,11 @@ def main():
 
     for model in models:
 
-        train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, n_prev_months, lead_years, downscaling)
-        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_trends(train, test, n_prev_months, path_models + "/combined/")
+        train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, lead_years, downscaling)
+        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_ssh_averages(train, test, path_models + model+"/")
         ## the values are in cms
     #
-        ## splitting train into train+valid
+        # splitting train into train+valid
         split_index = 20*12
 
         n_prev_times = n_prev_months
@@ -116,8 +124,8 @@ def main():
         X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
         X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times)
 
-        y_train = y_train[:,:,n_prev_times:]
-        y_test = y_test[:,:,n_prev_times:]
+        y_train = y_train[:,:,12:] #n_prev_times, it should always be 12 , because you always want to start you label from 1930
+        y_test = y_test[:,:,12:]
 
         y_train = np.transpose(y_train, (2,0,1)) #y_train.reshape(-1,lon,lat)
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)
@@ -158,13 +166,122 @@ def main():
     print("combined test input shapes: ", X_test_combined_input.shape, y_test_combined_input.shape)
 
     model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
-    train_cnn.basic_CNN_train(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
-    valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, X_test_combined_input, y_test_combined_input, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
-    f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
-    f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+
+    for iter in range(3):
+        os.makedirs(
+            folder_saving+"/"+str(iter), exist_ok=True)
+        train_cnn.basic_CNN_train(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving+"/"+str(iter)+"/", model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention = attention)
+        valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(X_train_combined_input, y_train_combined_input, X_valid_combined_input, y_valid_combined_input, X_test_combined_input, y_test_combined_input, weight_map, n_features, n_prev_times+1, folder_saving+"/"+str(iter)+"/", model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
+        f.write('For run: '+str(iter)+'\n')
+        f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
+        f.write('\n evaluation metrics (rmse, mae) on test data ' + str(test_rmse) + "," + str(test_mae) + '\n')
+
+        # y_valid_combined_trend_pred_per_run = np.load(folder_saving + "/"+str(iter)+ "/valid_predictions.npy")
+        # print(y_valid_combined_trend_pred_per_run.shape)
+        #
+        # valid_prediction_list_over_multiple_runs.append(y_valid_combined_trend_pred_per_run)
+
     f.close()
 
-
+    #
+    #
+    # y_valid_combined_trend_pred = np.mean(np.stack(valid_prediction_list_over_multiple_runs,axis=0),axis=0)
+    # print(y_valid_combined_trend_pred.shape)
+    #
+    # idx_start = 0
+    # idx_end = idx_start+240
+    #
+    # for i, model in enumerate(models):
+    #     print(idx_start, idx_end)
+    #     y_valid_trend_pred = y_valid_combined_trend_pred[idx_start:idx_end, :, :]
+    #     y_valid_trend = y_valid_combined_input[idx_start:idx_end, :, :]
+    #     print(np.isnan(y_valid_trend_pred).sum())
+    #     y_valid_trend_pred[np.isnan(y_valid_trend)] = np.nan
+    #     print(np.isnan(y_valid_trend_pred).sum())
+    #
+    #     trend_prediction_2041_2070 = y_valid_trend_pred[0,:,:]
+    #     model_trend_2041_2070 = y_valid_trend[0,:,:]
+    #     # eval.plot(trend_prediction_2041_2070, folder_saving, "trend_prediction_on_2041_2070_" + str(model), trend=True)
+    #     # eval.plot(model_trend_2041_2070, folder_saving, "trend_model_on_2041_2070_" + str(model), trend=True)
+    #     eval.plot(model_trend_2041_2070 - trend_prediction_2041_2070, folder_saving, "trend_diff_model_and_pred_2041_2070_" + str(model), trend=True)
+    #
+    #     # model_trend_2041_2070_rms, _ = eval.evaluation_metrics(None,
+    #     #                                              model_trend_2041_2070 * 10,
+    #     #                                              mask=~np.isnan(model_trend_2041_2070),
+    #     #                                              weight_map=weight_map, trend=True)
+    #     # trend_prediction_2041_2070_rms, _ = eval.evaluation_metrics(None,
+    #     #                                              trend_prediction_2041_2070 * 10,
+    #     #                                              mask=~np.isnan(trend_prediction_2041_2070),
+    #     #                                              weight_map=weight_map, trend=True)
+    #     # diff_model_ml_pred_rms_2041_2070, _ = eval.evaluation_metrics(None,
+    #     #                                                         (model_trend_2041_2070 - trend_prediction_2041_2070) * 10,
+    #     #                                                         mask=~np.isnan(model_trend_2041_2070),
+    #     #                                                         weight_map=weight_map, trend=True)
+    #     #
+    #     # print("rms of ml prediction 2041_2070 in mm/yr: ", trend_prediction_2041_2070_rms)
+    #     # print("rms of diff between clm model and ml prediction 2041_2070 in mm/yr: ", diff_model_ml_pred_rms_2041_2070)
+    #     # print("rms of clm model 2041_2070 in mm/yr: ", model_trend_2041_2070_rms)
+    #
+    #
+    #     trend_prediction_2051_2080 = y_valid_trend_pred[120, :, :]
+    #     model_trend_2051_2080 = y_valid_trend[120, :, :]
+    #     # eval.plot(trend_prediction_2051_2080, folder_saving, "trend_prediction_on_2051_2080_" + str(model), trend=True)
+    #     # eval.plot(model_trend_2051_2080, folder_saving, "trend_model_on_2051_2080_" + str(model), trend=True)
+    #     eval.plot(model_trend_2051_2080-trend_prediction_2051_2080, folder_saving, "trend_diff_model_and_pred_on_2051_2080_" + str(model), trend=True)
+    #
+    #     # model_trend_2051_2080_rms, _ = eval.evaluation_metrics(None,
+    #     #                                                    model_trend_2051_2080 * 10,
+    #     #                                                    mask=~np.isnan(model_trend_2051_2080),
+    #     #                                                    weight_map=weight_map, trend=True)
+    #     # trend_prediction_2051_2080_rms, _ = eval.evaluation_metrics(None,
+    #     #                                                         trend_prediction_2051_2080 * 10,
+    #     #                                                         mask=~np.isnan(trend_prediction_2051_2080),
+    #     #                                                         weight_map=weight_map, trend=True)
+    #     # diff_model_ml_pred_rms_2051_2080, _ = eval.evaluation_metrics(None,
+    #     #                                                               (
+    #     #                                                               model_trend_2051_2080 - trend_prediction_2051_2080) * 10,
+    #     #                                                               mask=~np.isnan(model_trend_2051_2080),
+    #     #                                                               weight_map=weight_map, trend=True)
+    #     #
+    #     # print("rms of ml prediction 2051_2080 in mm/yr: ", trend_prediction_2051_2080_rms)
+    #     # print("rms of diff between clm model and ml prediction 2051_2080 in mm/yr: ", diff_model_ml_pred_rms_2051_2080)
+    #     # print("rms of clm model 2051_2080 in mm/yr: ", model_trend_2051_2080_rms)
+    #
+    #     #
+    #     # persistence_trend = X_valid_combined_input[idx_start:idx_end , :, :, 0]
+    #     # print(persistence_trend.shape)
+    #     # persistence_trend_2041_2070 = persistence_trend[0, :, :]
+    #     #
+    #     # eval.plot(model_trend_2041_2070 - persistence_trend_2041_2070, folder_saving,
+    #     #           "trend_diff_model_and_persistence_2041_2070_" + str(model), trend=True)
+    #     #
+    #     # diff_model_persistence_rms_2041_2070, _ = eval.evaluation_metrics(None,
+    #     #                                                               (
+    #     #                                                              model_trend_2041_2070 - persistence_trend_2041_2070) * 10,
+    #     #                                                               mask=~np.isnan(model_trend_2041_2070),
+    #     #                                                               weight_map=weight_map, trend=True)
+    #     #
+    #     # print("rms of diff between clm model and persistence 2041_2070 in mm/yr: ", diff_model_persistence_rms_2041_2070)
+    #     #
+    #     # persistence_trend_2051_2080 = persistence_trend[120, :, :]
+    #     #
+    #     # eval.plot(model_trend_2051_2080 - persistence_trend_2051_2080, folder_saving,
+    #     #           "trend_diff_model_and_persistence_2051_2080_" + str(model), trend=True)
+    #     #
+    #     # diff_model_persistence_rms_2051_2080, _ = eval.evaluation_metrics(None,
+    #     #                                                                   (
+    #     #                                                                   model_trend_2051_2080 - persistence_trend_2051_2080) * 10,
+    #     #                                                                   mask=~np.isnan(model_trend_2051_2080),
+    #     #                                                                   weight_map=weight_map, trend=True)
+    #     #
+    #     # print("rms of diff between clm model and persistence 2051_2080 in mm/yr: ",
+    #     #       diff_model_persistence_rms_2051_2080)
+    #
+    #     idx_start = idx_end
+    #     idx_end = idx_start+240
+    #
+    #
+    #
 
 
 if __name__=='__main__':

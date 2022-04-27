@@ -1,7 +1,7 @@
 import numpy as np
 from math import sqrt
 #import netCDF4
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
 #import cartopy.crs as ccrs
 #from matplotlib.colors import TwoSlopeNorm, Normalize
@@ -52,13 +52,14 @@ def evaluation_metrics(pred, target, mask, weight_map, trend = False):
 
 def fit_trend(pred, mask, yearly = False, year_range=range(2041,2071)):
 
+
     lon = pred.shape[1]
     lat = pred.shape[2]
     missing_val = 1e+36
     x = list(year_range) #list(range(2041,2071)) #
     mid_x = np.mean(x)
     x = np.asarray([i-mid_x for i in x])
-
+    print(x)
     n_years = int(pred.shape[0] / 12)
 
     if yearly:
@@ -153,9 +154,10 @@ def single_point_test(x_i_j, y_i_j, pred, target, years, count, folder_saving):
 
 def plot(xr, folder_saving, save_file, trend =False, index = None):
 
-    # obs_nc = "/Users/saumya/Desktop/Sealevelrise/Data/Observations/nc_files/altimeter2deg.nc"
-    obs_nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_CESM2LE_zos_fr_2015_2100.bin.nc"
-    dataset = netCDF4.Dataset(obs_nc)
+    # nc = "/Users/saumya/Desktop/Sealevelrise/Data/Observations/nc_files/altimeter2deg.nc"
+    # nc="/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/ssp370_CESM2LE_zos_fr_2015_2100.bin.nc"
+    nc = "/Users/saumya/Desktop/Sealevelrise/Data/Forced_Responses/zos/2015-2100/nc_files/rcp85_CESM1LE_zos_fr_2015_2100.bin.nc"
+    dataset = netCDF4.Dataset(nc)
 
     # for var in dataset.variables.values():
     #     print(var)
@@ -178,7 +180,7 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
         # zos = np.ma.masked_where(zos==1e+36, zos)
         zos = np.ma.masked_where(np.isnan(zos), zos)
         print(np.min(zos), np.max(zos), zos.shape)
-        zos = zos*1000
+        zos = zos*10 #1000
 
 
         # print("signal to noise ratio: ", signaltonoise(zos))
@@ -195,8 +197,8 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
     zos, lons = add_cyclic_point(zos, coord=lons)
 
     ax = plt.axes(projection=ccrs.PlateCarree(central_longitude=210))  #central_longitude=210
-    v_min=-2 #zos.min()
-    v_max=3 #zos.max()
+    v_min=-1 #zos.min()
+    v_max=1 #zos.max()
     levels = np.linspace(v_min, v_max, 60)
     norm = TwoSlopeNorm(vmin=v_min, vcenter=0, vmax=v_max)
     plt.contourf(lons,lats, zos, cmap="coolwarm",vmin=v_min, vmax=v_max, levels=levels,
