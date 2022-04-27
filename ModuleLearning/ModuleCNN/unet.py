@@ -77,7 +77,9 @@ class UNet(nn.Module):
 
 
 class SmaAt_UNet_model(nn.Module):
+
     def __init__(self, dim_channels,last_channel_size=1, kernels_per_layer=2, bilinear=True, reduction_ratio=4): #16):
+
         super(SmaAt_UNet_model, self).__init__()
         self.n_channels = dim_channels
         self.n_classes = last_channel_size
@@ -93,14 +95,15 @@ class SmaAt_UNet_model(nn.Module):
         self.cbam2 = CBAM(32, reduction_ratio=reduction_ratio)
         self.down2 = DownDS(32, 64, kernels_per_layer=kernels_per_layer)
         self.cbam3 = CBAM(64, reduction_ratio=reduction_ratio)
-        self.down3 = DownDS(64, 128 // factor, kernels_per_layer=kernels_per_layer) #DownDS(64, 128, kernels_per_layer=kernels_per_layer)
-        self.cbam4 = CBAM(128 // factor, reduction_ratio=reduction_ratio) #CBAM(128, reduction_ratio=reduction_ratio)
-        # self.down4 = DownDS(128, (256) // factor, kernels_per_layer=kernels_per_layer)
-        # self.cbam5 = CBAM((256) // factor, reduction_ratio=reduction_ratio)
-        self.up1 = UpDS(128, (64) // factor, self.bilinear, kernels_per_layer=kernels_per_layer) #UpDS(256, (128) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
-        self.up2 = UpDS(64, (32) // factor, self.bilinear, kernels_per_layer=kernels_per_layer) #UpDS(128, (64) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
-        self.up3 = UpDS(32, 16, self.bilinear, kernels_per_layer=kernels_per_layer)#UpDS(64, (32) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
-        # self.up4 = UpDS(32, 16, self.bilinear, kernels_per_layer=kernels_per_layer)
+        self.down3 = DownDS(64, 128, kernels_per_layer=kernels_per_layer)
+        self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
+        self.down4 = DownDS(128, (256) // factor, kernels_per_layer=kernels_per_layer)
+        self.cbam5 = CBAM((256) // factor, reduction_ratio=reduction_ratio)
+        self.up1 = UpDS(256, (128) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
+        self.up2 = UpDS(128, (64) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
+        self.up3 = UpDS(64, (32) // factor, self.bilinear, kernels_per_layer=kernels_per_layer)
+        self.up4 = UpDS(32, 16, self.bilinear, kernels_per_layer=kernels_per_layer)
+
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -158,15 +161,17 @@ class UNet_attn_model(nn.Module):
         self.cbam2 = CBAM(32, reduction_ratio=reduction_ratio)
         self.down2 = Down(32, 64)
         self.cbam3 = CBAM(64, reduction_ratio=reduction_ratio)
-        self.down3 = Down(64, 128)
-        self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
+        #self.down3 = Down(64, 128)
+        #self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
         factor = 2 if self.bilinear else 1
-        self.down4 = Down(128, 256 // factor)
-        self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
-        self.up1 = Up(256, 128 // factor, self.bilinear)
-        self.up2 = Up(128, 64 // factor, self.bilinear)
-        self.up3 = Up(64, 32 // factor, self.bilinear)
-        self.up4 = Up(32, 16, self.bilinear)
+        self.down3 = Down(64, 128 // factor)
+        self.cbam4 = CBAM(128 // factor, reduction_ratio=reduction_ratio)
+        #self.down4 = Down(128, 256 // factor)
+        #self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
+        self.up1 = Up(128, 64 // factor, self.bilinear)#Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(64, 32 // factor, self.bilinear)#Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(32, 16, self.bilinear)#Up(64, 32 // factor, self.bilinear)
+        #self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -179,12 +184,12 @@ class UNet_attn_model(nn.Module):
         x3Att = self.cbam3(x3)
         x4 = self.down3(x3)
         x4Att = self.cbam4(x4)
-        x5 = self.down4(x4)
-        x5Att = self.cbam5(x5)
-        x = self.up1(x5Att, x4Att)
-        x = self.up2(x, x3Att)
-        x = self.up3(x, x2Att)
-        x = self.up4(x, x1Att)
+        #x5 = self.down4(x4)
+        #x5Att = self.cbam5(x5)
+        x = self.up1(x4Att, x3Att)#self.up1(x5Att, x4Att)
+        x = self.up2(x, x2Att)#self.up2(x, x3Att)
+        x = self.up3(x, x1Att)#self.up3(x, x2Att)
+        #x = self.up4(x, x1Att)
         logits = self.outc(x)
         return logits
 

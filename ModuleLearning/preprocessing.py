@@ -19,6 +19,7 @@ def include_prev_timesteps(X, n_timesteps, include_heat=False):
 
     X_with_prev_timesteps = []
     n_months = X.shape[3]
+
     for i in range(12,n_months): #12 because we always want to start from 1930, and choose what tiemsteps to take from 1929
         prev_list =[]
         for j in range(n_timesteps,0,-1):

@@ -41,7 +41,7 @@ test_end_year = 2070 #2020 #
 ## last test point.
 
 lead_years = 30
-model_type = "Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "Unet"#"Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -52,25 +52,24 @@ q50 = 9
 reg = "CNN/averaged_Unet/"# Unet"
 
 
-# sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#cnn_with_1yr_lag_large_batchnorm_unet_attn_downscaled_weighted_changed_years_not_normalized"#"
-# sub_reg = "_trend_rerun_cnn_with_0lag_batchnorm_small_unet_weight_decay1e-4_downscaled_weighted_changed_years_not_normalized"
-# sub_reg = "_combined_cesm1and2_trend_cnn_with_1yrlag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"
-# sub_reg = "_trend_cnn_with_0lag_batchnorm_unetdilated_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "trial"
+sub_reg = "_averaged_cnn_with_0lag_batchnorm_bigunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+
+
 
 ## Hyperparameters
 hidden_dim = 12 #40 #24
-num_layers=1 #1
+num_layers=2 #1
 
 kernel_size = (3,3)
 
 batch_size = 6
-epochs = 1#200
+epochs = 200#200
 lr = 1e-4
 
 features = ["sea_level"]
 n_features = len(features)
-n_prev_months = 0 ##seq-length of the deep sequence models
+
+n_prev_months = 0 #12 ##seq-length of the deep sequence models
 
 downscaling = True #converting 360*180 to 180*90
 include_heat = False
@@ -99,7 +98,7 @@ def main():
         folder_saving = path_models + "combined_CESM1and2/" + reg + "/" + sub_reg + "/"
     else:
         folder_saving = path_models + models[0] + "/" + reg + "/" + sub_reg + "/"
-        # folder_saving = path_models + "CESM1LE" + "/" + reg + "/" + sub_reg + "/"
+
     os.makedirs(
         folder_saving, exist_ok=True)
 
@@ -109,7 +108,8 @@ def main():
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, lead_years, downscaling)
         X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_ssh_averages(train, test, path_models + model+"/")
-        ## the values are in cms
+
+        ## the values are in cms for trends and meters for averages
     #
         # splitting train into train+valid
         split_index = 20*12
