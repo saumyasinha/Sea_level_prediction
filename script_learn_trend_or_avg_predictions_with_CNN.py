@@ -10,14 +10,14 @@ from ModuleLearning.ModuleCNN import train as train_cnn
 
 path_local = "/Users/saumya/Desktop/Sealevelrise/"
 path_cluster = "/pl/active/machinelearning/Saumya/ML_for_sea_level/"
-path_project = path_cluster
+path_project = path_local
 
 path_data = path_project+"Data/"
 path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
 ## which climate model to work on
-models = ['CESM1LE'] #,'CESM2LE']
+models = ['CESM1LE']#,'CESM2LE']
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -42,7 +42,7 @@ test_end_year = 2070 #2020 #
 
 lead_years = 30
 model_type = "Unet"#"Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
-
+average_over_years = 10
 ## if we want to have probabilsitic prediction
 quantile = False
 alphas = np.arange(0.05, 1.0, 0.05)
@@ -52,7 +52,7 @@ q50 = 9
 reg = "CNN/averaged_Unet/"# Unet"
 
 
-sub_reg = "_averaged_cnn_with_0lag_batchnorm_bigunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "_averaged_10yrs_cnn_with_0lag_batchnorm_bigunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
 
 
 
@@ -70,7 +70,7 @@ features = ["sea_level"]
 n_features = len(features)
 
 n_prev_months = 0 #12 ##seq-length of the deep sequence models
-
+max_prev_steps=12
 downscaling = True #converting 360*180 to 180*90
 include_heat = False
 attention = False
@@ -107,7 +107,7 @@ def main():
     for model in models:
 
         train, test = preprocessing.create_train_test_split(model, historical_path, future_path, train_start_year, train_end_year, test_start_year, test_end_year, lead_years, downscaling)
-        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_ssh_averages(train, test, path_models + model+"/")
+        X_train, y_train, X_test, y_test = preprocessing.create_train_test_and_labels_on_ssh_averages(train, test, path_models + model+"/",average_over_years=average_over_years)
 
         ## the values are in cms for trends and meters for averages
     #
@@ -124,8 +124,8 @@ def main():
         X_train = preprocessing.include_prev_timesteps(X_train, n_prev_times)
         X_test = preprocessing.include_prev_timesteps(X_test, n_prev_times)
 
-        y_train = y_train[:,:,12:] #n_prev_times, it should always be 12 , because you always want to start you label from 1930
-        y_test = y_test[:,:,12:]
+        y_train = y_train[:,:,max_prev_steps:] #n_prev_times, it should always be 12 , because you always want to start you label from 1930
+        y_test = y_test[:,:,max_prev_steps:]
 
         y_train = np.transpose(y_train, (2,0,1)) #y_train.reshape(-1,lon,lat)
         y_test = np.transpose(y_test, (2,0,1)) #y_test.reshape(-1, lon, lat)

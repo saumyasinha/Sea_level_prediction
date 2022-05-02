@@ -12,7 +12,7 @@ def remove_land_values(xr):
     return xr
 
 
-def include_prev_timesteps(X, n_timesteps, include_heat=False):
+def include_prev_timesteps(X, n_timesteps, max_prev_steps=12, include_heat=False):
 
 
     X = np.expand_dims(X, axis=2)
@@ -20,7 +20,7 @@ def include_prev_timesteps(X, n_timesteps, include_heat=False):
     X_with_prev_timesteps = []
     n_months = X.shape[3]
 
-    for i in range(12,n_months): #12 because we always want to start from 1930, and choose what tiemsteps to take from 1929
+    for i in range(max_prev_steps,n_months): #12 because we always want to start from 1930, and choose what tiemsteps to take from 1929
         prev_list =[]
         for j in range(n_timesteps,0,-1):
             prev = X[:, :, :, i - j]
@@ -67,7 +67,7 @@ def year_start_index(year):
     idx = (year - 1850) * 12
     return idx
 
-def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, lead_years, downscaling=False, heat=False, n_prev_months=12):
+def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_start_year, train_end_year, test_start_year, test_end_year, lead_years, downscaling=False, heat=False, max_prev_times=12):
 
     '''
     if train_start_year = 1900, train_end_year = 1990,
@@ -96,12 +96,12 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     #
     train_start_index = year_start_index(train_start_year)
     train_end_index = year_start_index(train_end_year)+12
-    train = full_array[:, :,train_start_index-n_prev_months: train_end_index]
+    train = full_array[:, :,train_start_index-max_prev_times: train_end_index]
     print(train_start_index,train_end_index,train.shape)
 
     test_start_index = year_start_index(test_start_year)
     test_end_index = year_start_index(test_end_year+lead_years)+12
-    test = full_array[:, :, test_start_index-n_prev_months: test_end_index]
+    test = full_array[:, :, test_start_index-max_prev_times: test_end_index]
     print(test_start_index, test_end_index, test.shape)
 
     ##masking land values with np.nan
@@ -115,13 +115,13 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     print(np.nanmin(train), np.nanmax(train), np.nanmin(test), np.nanmax(test), np.isnan(train).sum(), np.isnan(test).sum())
     return train, test
 
-def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_years=30, trend_over_years=30, n_prev_months=12):
+def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_years=30, trend_over_years=30, max_prev_times=12):
 
     # print("inside trends function")
     # trend_over_months = trend_over_years*12
     # n_months_train = train.shape[2]
     # n_months_test = test.shape[2]
-    # full_array = np.concatenate([train, test[:, :, n_prev_months:]], axis=2)
+    # full_array = np.concatenate([train, test[:, :, max_prev_times:]], axis=2)
     # print(full_array.shape, n_months_train, n_months_test)
     #
     # # full_array = full_array
@@ -145,14 +145,14 @@ def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_yea
 
     print("full trend array shape", full_trend_array.shape)
 
-    ## keeping the last 10 years as test, train: 102 yrs and test is 10 yrs from trend full data of 112 years of labelled points
+    ## keeping the last 10 years as test, train: 102(including 1 prev yr) yrs and test is 10 yrs from trend full data of 112 years of labelled points
     n_months_train = 102*12
     n_months_test = 10*12
     X_train = full_trend_array[:, :, :n_months_train]
     y_train = full_trend_array[:, :, lead_years * 12:n_months_train + (lead_years * 12)]
 
-    X_test = full_trend_array[:, :, n_months_train-12:n_months_train + n_months_test] ## doing -12 here to include one year before in the test data
-    y_test = full_trend_array[:, :, n_months_train-12+lead_years * 12:n_months_train + n_months_test+lead_years * 12]
+    X_test = full_trend_array[:, :, n_months_train-max_prev_times:n_months_train + n_months_test] ## doing -12 here to include one year before in the test data
+    y_test = full_trend_array[:, :, n_months_train-max_prev_times+lead_years * 12:n_months_train + n_months_test+lead_years * 12]
 
     print("X_train, y_train shapes", X_train.shape, y_train.shape)
     print("X_test, y_test shapes", X_test.shape, y_test.shape)
@@ -165,10 +165,11 @@ def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_yea
 
     return X_train, y_train, X_test, y_test
 
-def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  lead_years=30, average_over_years=30, n_prev_months=12):
+def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  lead_years=30, average_over_years=10, max_prev_times=12):
 
+    print(average_over_years)
     average_over_months = average_over_years*12
-    full_array = np.concatenate([train, test[:, :, n_prev_months:]], axis=2)
+    full_array = np.concatenate([train, test[:, :, max_prev_times:]], axis=2)
     print(full_array.shape)
 
     full_averaged_array = []
@@ -184,19 +185,19 @@ def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  le
 
 
     # full_averaged_array = np.load(folder_saving+"/full_averaged_array.npy")
-    # we remove the last point, to keep the data from Jan 1929 to Dec 2070
+    # we remove the last point, to keep the data from Jan 1929 to Dec 2090
     full_averaged_array = full_averaged_array[:,:,:-1]
     full_averaged_array = full_averaged_array/100 #to convert it to meters
     print("full averaged array shape", full_averaged_array.shape)
 
-    # keeping the last 10 years as test, train: 102 yrs and test is 10 yrs from trend full data of 112 years of labelled points
-    n_months_train = 102*12
-    n_months_test = 10*12
+    # keeping the last 20 years as test, train: 112 yrs (111+1prev year) and test is 20 yrs from trend full data of 132 years of labelled points
+    n_months_train = 112*12
+    n_months_test = 20*12
     X_train = full_averaged_array[:, :, :n_months_train]
     y_train = full_averaged_array[:, :, lead_years * 12:n_months_train + (lead_years * 12)]
 
-    X_test = full_averaged_array[:, :, n_months_train-12:n_months_train + n_months_test] ## doing -12 here to include one year before in the test data
-    y_test = full_averaged_array[:, :, n_months_train-12+lead_years * 12:n_months_train + n_months_test+lead_years * 12]
+    X_test = full_averaged_array[:, :, n_months_train-max_prev_times:n_months_train + n_months_test] ## doing -12 here to include one year before in the test data
+    y_test = full_averaged_array[:, :, n_months_train-max_prev_times+lead_years * 12:n_months_train + n_months_test+lead_years * 12]
 
     print("X_train, y_train shapes", X_train.shape, y_train.shape)
     print("X_test, y_test shapes", X_test.shape, y_test.shape)
