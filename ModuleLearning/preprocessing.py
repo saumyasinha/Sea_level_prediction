@@ -5,11 +5,16 @@ from skimage.measure import block_reduce
 def remove_land_values(xr):
 
     missing_val = 1e+36
-    print(np.nanmax(xr), np.nanmin(xr))
+    print(np.nanmax(xr), np.nanmin(xr), np.isnan(xr).sum())
     # xr[xr == missing_val] = 0
-    xr[np.isnan(xr)] = 0
-    print(np.max(xr),np.min(xr))
-    return xr
+    xr_copy = np.copy(xr) #xr.copy()
+    xr_copy[np.isnan(xr_copy)] = 0
+    print(np.max(xr_copy),np.min(xr_copy))
+    return xr_copy
+    # xr[np.isnan(xr)] = 0
+    # print(np.max(xr), np.min(xr),np.isnan(xr).sum())
+    # return xr
+
 
 
 def include_prev_timesteps(X, n_timesteps, max_prev_steps=12, include_heat=False):
@@ -108,6 +113,7 @@ def create_train_test_split(model, path_1850_to_2014, path_2015_to_2100, train_s
     train[train == 1e+36] = np.nan
     test[test == 1e+36] = np.nan
 
+
     if downscaling:
         train = downscale_input(train)
         test = downscale_input(test)
@@ -163,6 +169,8 @@ def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_yea
     print(np.nanmin(y_train), np.nanmax(y_train), np.nanmin(y_test), np.nanmax(y_test), np.isnan(y_train).sum(),
           np.isnan(y_test).sum())
 
+    # print(np.nansum(X_train), np.nansum(y_train), np.nansum(X_test), np.nansum(y_test))
+
     return X_train, y_train, X_test, y_test
 
 def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  lead_years=30, average_over_years=10, max_prev_times=12):
@@ -207,6 +215,8 @@ def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  le
 
     print(np.nanmin(y_train), np.nanmax(y_train), np.nanmin(y_test), np.nanmax(y_test), np.isnan(y_train).sum(),
           np.isnan(y_test).sum())
+
+    # print(np.nansum(X_train), np.nansum(y_train), np.nansum(X_test), np.nansum(y_test))
 
     return X_train, y_train, X_test, y_test
 

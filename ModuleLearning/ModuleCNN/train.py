@@ -14,7 +14,7 @@ def get_target_mask(y):
     mask = ~np.isnan(y)#(y != missing_val)
     print("mask",mask.shape, y[mask].max(),y[mask].min())
     # print("num of ocean pixels: ", mask.sum())
-    y_copy = y.copy()
+    y_copy = np.copy(y) #y.copy()
     y_copy[np.isnan(y_copy)] = 0
     return y_copy, mask
 

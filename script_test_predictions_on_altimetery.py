@@ -18,7 +18,7 @@ path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
 ## which climate model to work on
-models = ['CESM2LE'] #,'CESM2LE'] # ['MIROC-ES2L'] #['MPI-ESM1-2-HR']
+models = ['CESM1LE','CESM2LE'] # ['MIROC-ES2L'] #['MPI-ESM1-2-HR']
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -38,7 +38,7 @@ test_start_year = 2041 #1991
 test_end_year = 2070 #2020 #
 
 lead_years = 30
-model_type = "Unet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "DilatedUnet"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -50,14 +50,14 @@ reg = "CNN/trend_Unet/"
 # sub_reg = "cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"
 # sub_reg = "_rerun_cnn_with_1yr_lag_large_batchnorm_unet_downscaled_weighted_changed_years_not_normalized"#"final_cnn_with_1yr_lag_convlstm_downscaled_weighted_changed_years_not_normalized"#"
 # sub_reg = "_trend_cnn_with_0lag_small_batchnorm_unet_weight_decay1e-4_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "_trend_rerun_cnn_with_0lag_batchnorm_small_unet_weight_decay1e-4_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "_trend_cnn_with_0lag_batchnorm_unetdilated_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
 ## Hyperparameters
 hidden_dim = 12
 num_layers=1
 kernel_size = [(3,3)]
 
 batch_size = 6
-epochs = 1#200
+epochs = 200#200
 lr = 1e-4
 
 features = ["sea_level"]
@@ -125,36 +125,48 @@ def main():
     print(X_test.shape, np.max(X_test), np.min(X_test))
 
     model_saved = "model_at_lead_"+str(lead_years)+"_yrs"
+
     n_prev_times = n_prev_months
+
+    altimeter_prediction_list_over_multiple_runs = []
+    for iter in range(3):
     # train_cnn.basic_CNN_train(X_train_input, y_train_input, X_valid_input, y_valid_input, weight_map, n_features,  n_prev_times+1, epochs, batch_size, lr, folder_saving, model_saved, include_heat, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size)
-    valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(None, None, None, None, X_test, None, weight_map, n_features, n_prev_times+1, folder_saving, model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
+    #     valid_rmse, valid_mae, test_rmse, test_mae, valid_mask, test_mask = train_cnn.basic_CNN_test(None, None, None, None, X_test, None, weight_map, n_features, n_prev_times+1, folder_saving+"/"+str(iter)+"/", model_saved, quantile, alphas, model_type = model_type, hidden_dim = hidden_dim, num_layers = num_layers, kernel_size=kernel_size, attention=attention)
     # f.write('\n evaluation metrics (rmse, mae) on valid data ' + str(valid_rmse) + "," + str(valid_mae) +'\n')
     # f.write('\n evaluation metrics (rmse, mae) on altimeter data ' + str(test_rmse) + "," + str(test_mae) + '\n')
     # f.close()
+        prediction_trend_per_run = np.load(folder_saving + "/"+str(iter) + "/altimeter_predictions.npy")
+        print(iter)
+        print(prediction_trend_per_run.shape)
+        altimeter_prediction_list_over_multiple_runs.append(prediction_trend_per_run)
 
 
     #####Visualizations####################
     #### get trend plots######
-    prediction_trend = np.load(folder_saving+"/altimeter_predictions.npy")
+    print(np.stack(altimeter_prediction_list_over_multiple_runs,axis=0).shape)
+    prediction_trend = np.mean(np.stack(altimeter_prediction_list_over_multiple_runs,axis=0),axis=0)
+
     print(prediction_trend.shape)
     print(np.isnan(prediction_trend).sum())
 
     prediction_trend[np.isnan(altimeter_trend)] = np.nan
     print(np.isnan(prediction_trend).sum())
+
+    np.save("DilatedUnet_trained_on_CESM1and2_trends_for_2023-2049",prediction_trend)
     # y_test_pred = y_test_pred[:-5, :, :]
     # print(y_test_pred.shape)
     # mask = mask[:-5,:,:]
     # print(mask.shape, mask.sum())
-    eval.plot(prediction_trend, folder_saving, "altimeter_prediction_trend_2023-2049", trend=True)
-    # altimeter_data = altimeter_data[:-5, :, :]
-    # print(np.nanmin(altimeter_data), np.nanmax(altimeter_data)) #-2.2653828 1.6158351
-    # altimeter_trend = eval.fit_trend(altimeter_data, mask, yearly=yearly, year_range = range(1994,2020))
-    eval.plot(altimeter_trend, folder_saving, "altimeter_trend_1993-2019", trend=True)
-
-    # eval.plot(prediction_trend - altimeter_trend, folder_saving, "altimeter_prediction_trend-altimeter_trend", trend=True)
-    altimeter_pred_rms,_ = eval.evaluation_metrics(None,prediction_trend*10, mask = ~np.isnan(prediction_trend), weight_map=weight_map, trend=True)
-    altimeter_rms, _ = eval.evaluation_metrics(None, altimeter_trend*10, mask=~np.isnan(altimeter_trend),
-                                                    weight_map=weight_map, trend=True)
+    # eval.plot(prediction_trend, folder_saving, "altimeter_prediction_trend_2023-2049", trend=True)
+    # # altimeter_data = altimeter_data[:-5, :, :]
+    # # print(np.nanmin(altimeter_data), np.nanmax(altimeter_data)) #-2.2653828 1.6158351
+    # # altimeter_trend = eval.fit_trend(altimeter_data, mask, yearly=yearly, year_range = range(1994,2020))
+    # eval.plot(altimeter_trend, folder_saving, "altimeter_trend_1993-2019", trend=True)
+    #
+    # # eval.plot(prediction_trend - altimeter_trend, folder_saving, "altimeter_prediction_trend-altimeter_trend", trend=True)
+    # altimeter_pred_rms,_ = eval.evaluation_metrics(None,prediction_trend*10, mask = ~np.isnan(prediction_trend), weight_map=weight_map, trend=True)
+    # altimeter_rms, _ = eval.evaluation_metrics(None, altimeter_trend*10, mask=~np.isnan(altimeter_trend),
+    #                                                 weight_map=weight_map, trend=True)
     # diff_ML_pred_altimeter_rms, _ = eval.evaluation_metrics(None, (prediction_trend-altimeter_trend) * 1000, mask=~np.isnan(altimeter_trend),
     #                                            weight_map=weight_map, trend=True)
     #### get trend plots on climate model for comparison ####
