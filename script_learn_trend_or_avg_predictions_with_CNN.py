@@ -64,7 +64,7 @@ num_layers=2 #1
 kernel_size = (3,3)
 
 batch_size = 6
-epochs = 200#200
+epochs = 150 #200#200
 lr = 1e-4
 
 features = ["sea_level"]

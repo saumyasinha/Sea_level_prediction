@@ -161,17 +161,17 @@ class UNet_attn_model(nn.Module):
         self.cbam2 = CBAM(32, reduction_ratio=reduction_ratio)
         self.down2 = Down(32, 64)
         self.cbam3 = CBAM(64, reduction_ratio=reduction_ratio)
-        #self.down3 = Down(64, 128)
-        #self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
+        self.down3 = Down(64, 128)
+        self.cbam4 = CBAM(128, reduction_ratio=reduction_ratio)
         factor = 2 if self.bilinear else 1
-        self.down3 = Down(64, 128 // factor)
-        self.cbam4 = CBAM(128 // factor, reduction_ratio=reduction_ratio)
-        #self.down4 = Down(128, 256 // factor)
-        #self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
-        self.up1 = Up(128, 64 // factor, self.bilinear)#Up(256, 128 // factor, self.bilinear)
-        self.up2 = Up(64, 32 // factor, self.bilinear)#Up(128, 64 // factor, self.bilinear)
-        self.up3 = Up(32, 16, self.bilinear)#Up(64, 32 // factor, self.bilinear)
-        #self.up4 = Up(32, 16, self.bilinear)
+        #self.down3 = Down(64, 128 // factor)
+        #self.cbam4 = CBAM(128 // factor, reduction_ratio=reduction_ratio)
+        self.down4 = Down(128, 256 // factor)
+        self.cbam5 = CBAM(256 // factor, reduction_ratio=reduction_ratio)
+        self.up1 = Up(256, 128 // factor, self.bilinear)#Up(128, 64 // factor, self.bilinear)#Up(256, 128 // factor, self.bilinear)
+        self.up2 = Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear)#Up(128, 64 // factor, self.bilinear)
+        self.up3 = Up(64, 32 // factor, self.bilinear)#Up(32, 16, self.bilinear)#Up(64, 32 // factor, self.bilinear)
+        self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -184,12 +184,12 @@ class UNet_attn_model(nn.Module):
         x3Att = self.cbam3(x3)
         x4 = self.down3(x3)
         x4Att = self.cbam4(x4)
-        #x5 = self.down4(x4)
-        #x5Att = self.cbam5(x5)
-        x = self.up1(x4Att, x3Att)#self.up1(x5Att, x4Att)
-        x = self.up2(x, x2Att)#self.up2(x, x3Att)
-        x = self.up3(x, x1Att)#self.up3(x, x2Att)
-        #x = self.up4(x, x1Att)
+        x5 = self.down4(x4)
+        x5Att = self.cbam5(x5)
+        x = self.up1(x5Att, x4Att)#self.up1(x4Att, x3Att)#self.up1(x5Att, x4Att)
+        x = self.up2(x, x3Att)#self.up2(x, x2Att)#self.up2(x, x3Att)
+        x = self.up3(x, x2Att) #self.up3(x, x1Att)#self.up3(x, x2Att)
+        x = self.up4(x, x1Att)
         logits = self.outc(x)
         return logits
 
@@ -203,14 +203,14 @@ class UNet_model(nn.Module):
         self.inc = DoubleConv(self.n_channels, 16)
         self.down1 = Down(16, 32)
         self.down2 = Down(32, 64)
-        self.down3 = Down(64, 128)
+        #self.down3 = Down(64, 128)
         factor = 2 if self.bilinear else 1
-        # self.down3 = Down(64, 128 // factor)  #
-        self.down4 = Down(128, 256 // factor)
-        self.up1 = Up(256, 128 // factor, self.bilinear) #Up(128, 64 // factor, self.bilinear) #
-        self.up2 = Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #
-        self.up3 = Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
-        self.up4 = Up(32, 16, self.bilinear)
+        self.down3 = Down(64, 128 // factor)  #
+        #self.down4 = Down(128, 256 // factor)
+        self.up1 = Up(128, 64 // factor, self.bilinear) #Up(128, 64 // factor, self.bilinear) #Up(256, 128 // factor, self.bilinear)  #
+        self.up2 = Up(64, 32 // factor, self.bilinear)  #Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #
+        self.up3 = Up(32, 16, self.bilinear) #Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
+        #self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -223,15 +223,15 @@ class UNet_model(nn.Module):
         # print(x3.shape)
         x4 = self.down3(x3)
         # print(x4.shape)
-        x5 = self.down4(x4)
+        #x5 = self.down4(x4)
         # print(x5.shape)
-        x = self.up1(x5, x4) #self.up1(x4, x3) #
+        x = self.up1(x4, x3)  #self.up1(x5, x4) #self.up1(x4, x3) #
         # print(x.shape)
-        x = self.up2(x, x3) #self.up2(x, x2) #
+        x = self.up2(x, x2)  #self.up2(x, x3) #self.up2(x, x2) #
         # print(x.shape)
-        x = self.up3(x, x2) #self.up3(x, x1) #
+        x = self.up3(x, x1) #self.up3(x, x2) #self.up3(x, x1) #
         # print(x.shape)
-        x = self.up4(x, x1)
+        #x = self.up4(x, x1)
         # print(x.shape)
         logits = self.outc(x)
         # print(logits.shape)

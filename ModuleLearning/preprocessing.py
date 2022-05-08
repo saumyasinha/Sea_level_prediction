@@ -4,9 +4,7 @@ from skimage.measure import block_reduce
 
 def remove_land_values(xr):
 
-    missing_val = 1e+36
     print(np.nanmax(xr), np.nanmin(xr), np.isnan(xr).sum())
-    # xr[xr == missing_val] = 0
     xr_copy = np.copy(xr) #xr.copy()
     xr_copy[np.isnan(xr_copy)] = 0
     print(np.max(xr_copy),np.min(xr_copy))
