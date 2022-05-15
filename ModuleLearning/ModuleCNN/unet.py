@@ -203,14 +203,14 @@ class UNet_model(nn.Module):
         self.inc = DoubleConv(self.n_channels, 16)
         self.down1 = Down(16, 32)
         self.down2 = Down(32, 64)
-        #self.down3 = Down(64, 128)
+        self.down3 = Down(64, 128)
         factor = 2 if self.bilinear else 1
-        self.down3 = Down(64, 128 // factor)  #
-        #self.down4 = Down(128, 256 // factor)
-        self.up1 = Up(128, 64 // factor, self.bilinear) #Up(128, 64 // factor, self.bilinear) #Up(256, 128 // factor, self.bilinear)  #
-        self.up2 = Up(64, 32 // factor, self.bilinear)  #Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #
-        self.up3 = Up(32, 16, self.bilinear) #Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
-        #self.up4 = Up(32, 16, self.bilinear)
+        # self.down3 = Down(64, 128 // factor)  #
+        self.down4 = Down(128, 256 // factor)
+        self.up1 = Up(256, 128 // factor, self.bilinear) #Up(128, 64 // factor, self.bilinear) #Up(256, 128 // factor, self.bilinear)  #
+        self.up2 = Up(128, 64 // factor, self.bilinear)  #Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #
+        self.up3 = Up(64, 32// factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
+        self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)
 
@@ -223,15 +223,15 @@ class UNet_model(nn.Module):
         # print(x3.shape)
         x4 = self.down3(x3)
         # print(x4.shape)
-        #x5 = self.down4(x4)
+        x5 = self.down4(x4)
         # print(x5.shape)
-        x = self.up1(x4, x3)  #self.up1(x5, x4) #self.up1(x4, x3) #
+        x = self.up1(x5, x4)  #self.up1(x5, x4) #self.up1(x4, x3) #
         # print(x.shape)
-        x = self.up2(x, x2)  #self.up2(x, x3) #self.up2(x, x2) #
+        x = self.up2(x, x3)  #self.up2(x, x3) #self.up2(x, x2) #
         # print(x.shape)
-        x = self.up3(x, x1) #self.up3(x, x2) #self.up3(x, x1) #
+        x = self.up3(x, x2) #self.up3(x, x2) #self.up3(x, x1) #
         # print(x.shape)
-        #x = self.up4(x, x1)
+        x = self.up4(x, x1)
         # print(x.shape)
         logits = self.outc(x)
         # print(logits.shape)

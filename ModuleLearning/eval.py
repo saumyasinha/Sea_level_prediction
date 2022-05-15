@@ -1,12 +1,12 @@
 import numpy as np
 from math import sqrt
-# import netCDF4
-# import matplotlib.pyplot as plt
+#import netCDF4
+#import matplotlib.pyplot as plt
 import numpy.polynomial.polynomial as poly
-# import cartopy.crs as ccrs
-# from matplotlib.colors import TwoSlopeNorm, Normalize
-# from skimage.measure import block_reduce
-# from cartopy.util import add_cyclic_point
+#import cartopy.crs as ccrs
+#from matplotlib.colors import TwoSlopeNorm, Normalize
+from skimage.measure import block_reduce
+#from cartopy.util import add_cyclic_point
 from sklearn import linear_model
 import pickle
 from sklearn.preprocessing import PolynomialFeatures
@@ -182,7 +182,7 @@ def plot(xr, folder_saving, save_file, trend =False, index = None):
         # zos = np.ma.masked_where(zos==1e+36, zos)
         zos = np.ma.masked_where(np.isnan(zos), zos)
         print(np.min(zos), np.max(zos), zos.shape)
-        zos = zos*1000 #10
+        zos = zos*10 #1000
 
 
         # print("signal to noise ratio: ", signaltonoise(zos))

@@ -143,7 +143,7 @@ def create_train_test_and_labels_on_trends(train, test, folder_saving,  lead_yea
     # print(full_trend_array.shape)
     # np.save(folder_saving+"/full_trended_array.npy",full_trend_array)
     # print(np.nanmin(full_trend_array), np.nanmax(full_trend_array), np.isnan(full_trend_array).sum())
-    full_trend_array = np.load(folder_saving+"/full_trended_array.npy")
+    full_trend_array = np.load(folder_saving+"/full_trended_array.npy") #this has trends in cm
     ## we remove the last point, to keep the data from Jan 1929 to Dec 2070
     full_trend_array = full_trend_array[:,:,:-1]
 
@@ -187,7 +187,7 @@ def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  le
     full_averaged_array = np.concatenate(full_averaged_array, axis=2)
     print(full_averaged_array.shape)
     # np.save(folder_saving+"/full_averaged_array.npy",full_averaged_array)
-    print(np.nanmin(full_averaged_array), np.nanmax(full_averaged_array), np.isnan(full_averaged_array).sum())
+    # print(np.nanmin(full_averaged_array), np.nanmax(full_averaged_array), np.isnan(full_averaged_array).sum())
 
 
     # full_averaged_array = np.load(folder_saving+"/full_averaged_array.npy")
@@ -196,9 +196,9 @@ def create_train_test_and_labels_on_ssh_averages(train, test, folder_saving,  le
     full_averaged_array = full_averaged_array/100 #to convert it to meters
     print("full averaged array shape", full_averaged_array.shape)
 
-    # keeping the last 20 years as test, train: 112 yrs (111+1prev year) and test is 20 yrs from trend full data of 132 years of labelled points
-    n_months_train = 112*12
-    n_months_test = 20*12
+    # keeping the last 10 years as test, train: 122 yrs (121+1prev year) and test is 10 yrs from avg full data of 132 years of labelled points
+    n_months_train = 122*12
+    n_months_test = 10*12
     X_train = full_averaged_array[:, :, :n_months_train]
     y_train = full_averaged_array[:, :, lead_years * 12:n_months_train + (lead_years * 12)]
 
