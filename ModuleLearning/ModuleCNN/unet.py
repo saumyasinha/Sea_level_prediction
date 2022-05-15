@@ -205,11 +205,12 @@ class UNet_model(nn.Module):
         self.down2 = Down(32, 64)
         self.down3 = Down(64, 128)
         factor = 2 if self.bilinear else 1
-        # self.down3 = Down(64, 128 // factor)  #
+
+        #self.down3 = Down(64, 128 // factor)  #
         self.down4 = Down(128, 256 // factor)
         self.up1 = Up(256, 128 // factor, self.bilinear) #Up(128, 64 // factor, self.bilinear) #Up(256, 128 // factor, self.bilinear)  #
         self.up2 = Up(128, 64 // factor, self.bilinear)  #Up(128, 64 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #
-        self.up3 = Up(64, 32// factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
+        self.up3 = Up(64, 32 // factor, self.bilinear) #Up(64, 32 // factor, self.bilinear) #Up(32, 16 , self.bilinear) #
         self.up4 = Up(32, 16, self.bilinear)
 
         self.outc = OutConv(16, self.n_classes)

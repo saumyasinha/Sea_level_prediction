@@ -19,6 +19,7 @@ path_data_fr = path_data + "Forced_Responses/"
 ## which climate model to work on
 models = ['CESM1LE'] # ['CESM1LE','CESM2LE']
 
+
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
 
@@ -52,8 +53,10 @@ q50 = 9
 reg = "CNN/averaged_Unet/"# Unet"
 
 
-#sub_reg = "_averaged_10yrs_cnn_with_0lag_batchnorm_dilatedunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
 sub_reg = "_10yrsaveraged_cnn_with_0lag_batchnorm_dilatedunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+
+#sub_reg = "_trend_cnn_with_0lag_batchnorm_dilatedunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+
 
 
 
