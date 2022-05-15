@@ -17,7 +17,7 @@ path_models = path_project+"ML_Models/"
 path_data_fr = path_data + "Forced_Responses/"
 
 ## which climate model to work on
-models = ['CESM1LE']#,'CESM2LE']
+models = ['CESM2LE'] #['CESM1LE','CESM2LE']
 
 path_sealevel_folder = path_data_fr + "zos/"
 path_heatcontent_folder = path_data_fr + "heatfull/"
@@ -41,7 +41,7 @@ test_end_year = 2070 #2020 #
 ## last test point.
 
 lead_years = 30
-model_type = "Unet"#"Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
+model_type = "DilatedUnet"#"Unet" #"DilatedUnet3d"#"Unet"#"SmaAT_Unet" #"DilatedUnet"#"Unet_Attn" #"ConvLSTM" #
 average_over_years = 10
 ## if we want to have probabilsitic prediction
 quantile = False
@@ -53,7 +53,7 @@ reg = "CNN/trend_Unet/"# Unet"
 
 
 #sub_reg = "_averaged_10yrs_cnn_with_0lag_batchnorm_dilatedunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
-sub_reg = "_trend_cnn_with_0lag_batchnorm_bigunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
+sub_reg = "_trend_cnn_with_0lag_batchnorm_dilatedunet_weight_decay1e-6_downscaled_weighted_changed_years_not_normalized"
 
 
 
@@ -64,7 +64,7 @@ num_layers=2 #1
 kernel_size = (3,3)
 
 batch_size = 6
-epochs = 150 #200#200
+epochs = 200 #200#200
 lr = 1e-4
 
 features = ["sea_level"]
